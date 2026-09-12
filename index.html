@@ -1,0 +1,2396 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MIRROR INTERROGATION // 鏡像審訊</title>
+<style>
+:root{
+  --base:#0f1318;
+  --panel:#121820;
+  --cyan:#00E5A3;
+  --cyan-dim:#2a8a6e;
+  --amber:#E6A100;
+  --crimson:#FF2E4C;
+  --gray:#D5DCE3;
+  --line:#1f3d33;
+  --deep:#0a0e12;
+  --fs-body:  clamp(12.5px, 1.15vmin, 14px);
+  --fs-obs:   clamp(12px, 1.05vmin, 13.5px);
+  --fs-btn:   clamp(12.5px, 1.15vmin, 14px);
+  --fs-hud:   clamp(10.5px, .95vmin, 12px);
+  --fs-small: clamp(10px, .9vmin, 11.5px);
+  --fs-title: clamp(18px, 2vmin, 24px);
+  --fs-name:  clamp(20px, 2.2vmin, 28px);
+  --fs-story: clamp(13.5px, 1.3vmin, 16px);
+  --lh-body: 1.75;
+  --lh-obs: 1.75;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  height:100%;width:100%;background:#000;overflow:hidden;
+  font-family:"Courier New","Consolas","Menlo","Microsoft JhengHei","PingFang TC",monospace;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;-webkit-tap-highlight-color:transparent;
+}
+body{display:flex;align-items:center;justify-content:center;}
+#crt{
+  position:relative;
+  width:min(100vw, 177.78vh);
+  height:min(56.25vw, 100vh);
+  background:var(--base);
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  overflow:hidden;
+  color:var(--cyan);
+  box-shadow:0 0 90px rgba(0,229,163,.08), inset 0 0 160px rgba(0,0,0,.75);
+}
+.scanlines{
+  position:absolute;inset:0;z-index:60;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,
+    rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+    rgba(0,0,0,.16) 3px, rgba(0,0,0,.16) 4px);
+  mix-blend-mode:multiply;
+}
+.vig{
+  position:absolute;inset:0;z-index:59;pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%);
+}
+.flick{animation:flick 6s infinite steps(1);}
+@keyframes flick{
+  0%,97%{opacity:1;} 97.5%{opacity:.9;} 98%{opacity:1;}
+  98.6%{opacity:.95;} 99%{opacity:1;}
+}
+#topbar{
+  display:flex;align-items:center;gap:16px;
+  padding:9px 16px;border-bottom:1px solid var(--line);
+  font-size:var(--fs-hud);letter-spacing:.6px;
+  background:linear-gradient(180deg,#141b22,var(--base));
+  color:#6a9d8c;line-height:1.4;flex-wrap:wrap;
+}
+#topbar b{color:var(--cyan);font-weight:600;}
+.tb-left{color:var(--cyan);letter-spacing:1.8px;font-size:var(--fs-hud);}
+.tb-left .dim{color:#4a7266;}
+.tb-spacer{flex:1;}
+#wave.ok{color:#00E5A3;}
+#wave.warn{color:var(--amber);}
+#wave.bad{color:var(--crimson);animation:blink .8s infinite;}
+@keyframes blink{50%{opacity:.25;}}
+.tb-btn{
+  background:transparent;border:1px solid rgba(0,229,163,.4);
+  color:#8ac4b2;font-family:inherit;font-size:var(--fs-small);
+  letter-spacing:1.2px;padding:4px 10px;cursor:pointer;transition:all .15s;
+}
+.tb-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,163,.1);}
+#main{display:grid;grid-template-columns:60% 40%;overflow:hidden;min-height:0;}
+#left{
+  display:flex;flex-direction:column;
+  overflow:hidden;min-height:0;
+  border-right:1px solid var(--line);
+  background:radial-gradient(ellipse at 30% 0%, rgba(0,229,163,.05), transparent 62%);
+}
+#histwrap{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 22px 10px 22px;}
+#history{display:flex;flex-direction:column;}
+.line{
+  margin-bottom:12px;line-height:var(--lh-body);font-size:var(--fs-body);
+  letter-spacing:.3px;white-space:pre-wrap;word-break:break-word;
+}
+.line.player{color:var(--cyan);border-left:2px solid rgba(0,229,163,.6);padding-left:11px;margin-top:6px;}
+.line.w{color:#9fe8d0;padding-left:11px;border-left:2px solid rgba(0,229,163,.15);}
+.line.sys{color:#5f9d88;font-size:calc(var(--fs-body) * .88);letter-spacing:.8px;}
+.line.narr{color:var(--gray);font-size:calc(var(--fs-body) * .96);opacity:.95;}
+.line.mem{color:var(--amber);}
+.line.danger{color:var(--crimson);}
+.line.self{color:#8ab5b6;font-size:calc(var(--fs-body) * .96);font-style:italic;opacity:.9;padding-left:14px;border-left:1px solid rgba(138,181,182,.35);}
+.line.ambient{color:#7a9a90;font-size:calc(var(--fs-body) * .92);letter-spacing:1.2px;opacity:.9;}
+.line.head{
+  color:var(--amber);letter-spacing:2.5px;font-size:calc(var(--fs-body) * .9);
+  border-top:1px solid rgba(230,161,0,.3);
+  border-bottom:1px solid rgba(230,161,0,.3);
+  padding:6px 0;margin:16px 0 12px 0;text-align:center;
+}
+.line.title{color:var(--cyan);letter-spacing:8px;font-size:var(--fs-title);text-align:center;margin:24px 0;opacity:.95;}
+.line.dead{color:var(--crimson);letter-spacing:1px;}
+#dock{
+  flex:0 0 auto;max-height:52%;overflow-y:auto;
+  border-top:1px solid var(--line);
+  background:linear-gradient(180deg,#0e1418,var(--base));
+  padding:12px 22px 14px 22px;
+}
+.dockhead{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:var(--fs-small);letter-spacing:1.4px;color:#6a9d8c;
+  padding-bottom:8px;margin-bottom:9px;
+  border-bottom:1px dashed rgba(0,229,163,.18);
+  gap:10px;flex-wrap:wrap;
+}
+.dockhead .dim{color:#3f6a5e;letter-spacing:.7px;}
+#docklist{display:flex;flex-direction:column;gap:8px;}
+.qbtn{
+  display:block;width:100%;text-align:left;
+  background:transparent;
+  border:1px solid rgba(0,229,163,.22);
+  border-left:3px solid rgba(0,229,163,.45);
+  color:#baf5e2;
+  font-family:inherit;font-size:var(--fs-btn);line-height:1.6;
+  padding:10px 14px;cursor:pointer;
+  letter-spacing:.25px;
+  transition:all .13s ease;
+  border-radius:1px;
+}
+.qbtn:hover{background:rgba(0,229,163,.1);border-left-color:var(--cyan);color:#e8fff6;transform:translateX(2px);}
+.qbtn.choice{border-left-color:rgba(230,161,0,.6);color:#f5deb0;}
+.qbtn.choice:hover{background:rgba(230,161,0,.1);border-left-color:var(--amber);color:#fff4d8;}
+.qbtn.dangerous{border-left-color:rgba(255,46,76,.6);color:#ffc5cd;}
+.qbtn.dangerous:hover{background:rgba(255,46,76,.1);border-left-color:var(--crimson);color:#ffe2e7;}
+.docklabel{font-size:var(--fs-small);letter-spacing:1.8px;color:var(--amber);padding:3px 0 5px 2px;}
+#right{
+  position:relative;padding:16px 16px;overflow-y:auto;
+  background:
+    linear-gradient(180deg,rgba(0,229,163,.03),transparent 30%),
+    repeating-linear-gradient(0deg,transparent 0 40px, rgba(0,229,163,.03) 40px 41px);
+  min-height:0;display:flex;flex-direction:column;
+}
+.rhead{font-size:var(--fs-small);letter-spacing:1.8px;color:#6a9d8c;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:12px;}
+#observe{font-size:var(--fs-obs);line-height:var(--lh-obs);flex:1 1 auto;min-height:0;}
+.obsline{color:var(--gray);opacity:.9;margin-bottom:11px;padding-left:10px;border-left:1px solid rgba(213,220,227,.2);white-space:pre-wrap;}
+.obsline.amber{color:var(--amber);border-left-color:rgba(230,161,0,.5);}
+.obsline.red{color:#ffa8b6;border-left-color:rgba(255,46,76,.5);}
+.obsline.body{color:#a8b6c0;border-left-color:rgba(168,182,192,.35);}
+.dim{color:#3f6a5e;}
+#tortureBtn{
+  margin-top:12px;background:transparent;
+  border:1px solid rgba(255,46,76,.4);
+  border-left:3px solid var(--crimson);
+  color:#ffc5cd;font-family:inherit;font-size:var(--fs-btn);
+  letter-spacing:1.8px;padding:10px 12px;cursor:pointer;transition:all .15s;
+  width:100%;text-align:left;flex:0 0 auto;
+}
+#tortureBtn:hover{background:rgba(255,46,76,.1);border-color:var(--crimson);color:#ffe2e7;}
+#tortureBtn:disabled{opacity:.35;cursor:not-allowed;border-left-color:#4a2a30;color:#7a5a60;border-color:rgba(255,46,76,.2);}
+#bottombar{
+  display:flex;align-items:center;gap:22px;
+  padding:10px 18px;border-top:1px solid var(--line);
+  background:linear-gradient(0deg,#141b22,var(--base));
+  font-size:var(--fs-hud);letter-spacing:.9px;color:#6a9d8c;
+  line-height:1.4;flex-wrap:wrap;
+}
+#bottombar b{color:var(--cyan);font-weight:600;letter-spacing:1.2px;}
+#rec{color:var(--crimson);}
+.bar{display:inline-block;width:120px;height:6px;border:1px solid rgba(0,229,163,.4);margin-left:6px;vertical-align:middle;position:relative;overflow:hidden;}
+.bar > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,rgba(0,229,163,.6),var(--cyan));transition:width .6s ease;}
+.bar.hot > i{background:linear-gradient(90deg,rgba(255,46,76,.6),var(--crimson));}
+.bar.hot{border-color:rgba(255,46,76,.5);}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:80;}
+#blacktext{
+  position:absolute;inset:0;z-index:81;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 8%;color:#8aa8a0;font-size:var(--fs-story);
+  line-height:2;letter-spacing:1.5px;text-align:center;
+  white-space:pre-wrap;opacity:0;transition:opacity 1.4s ease;overflow-y:auto;
+}
+#blacktext.on{opacity:1;}
+#fileOverlay{position:absolute;inset:0;z-index:88;background:rgba(8,10,12,.98);display:none;flex-direction:column;overflow:hidden;}
+#fileOverlay.on{display:flex;}
+.file-header{
+  padding:16px 26px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(180deg,#141b22,var(--deep));
+  flex-wrap:wrap;gap:12px;
+}
+.file-header h2{color:var(--cyan);font-size:var(--fs-title);letter-spacing:6px;font-weight:400;}
+.file-header .subtitle{color:#6a9d8c;font-size:var(--fs-small);letter-spacing:2px;}
+.file-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.file-btn{
+  background:transparent;border:1px solid rgba(0,229,163,.4);
+  color:#8ac4b2;font-family:inherit;font-size:var(--fs-small);
+  letter-spacing:1.2px;padding:6px 12px;cursor:pointer;transition:all .15s;
+}
+.file-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,163,.08);}
+.file-btn.active{background:rgba(230,161,0,.15);border-color:var(--amber);color:var(--amber);}
+.file-body{
+  flex:1 1 auto;overflow-y:auto;padding:26px 32px;
+  font-size:var(--fs-body);line-height:1.9;
+  color:var(--gray);letter-spacing:.3px;max-width:900px;margin:0 auto;width:100%;
+}
+.file-body h3{color:var(--cyan);font-size:calc(var(--fs-body) * 1.1);letter-spacing:3px;margin:22px 0 10px 0;font-weight:600;border-bottom:1px solid var(--line);padding-bottom:6px;}
+.file-body p{margin-bottom:10px;}
+.file-body .meta{color:#6a9d8c;font-size:var(--fs-small);letter-spacing:1px;}
+.file-body .markable{cursor:text;padding:1px 2px;transition:background .15s;}
+.file-body .markable.hl{background:rgba(230,161,0,.3);box-shadow:0 0 0 1px rgba(230,161,0,.55);}
+.file-body .markable.mark{background:rgba(255,46,76,.25);box-shadow:0 0 0 1px rgba(255,46,76,.55);color:#ffe0e5;}
+.file-footer{padding:12px 26px;border-top:1px solid var(--line);text-align:center;background:var(--deep);}
+#fileClose{
+  background:transparent;border:1px solid rgba(0,229,163,.5);
+  color:var(--cyan);font-family:inherit;font-size:var(--fs-btn);
+  letter-spacing:3px;padding:9px 30px;cursor:pointer;transition:all .15s;
+}
+#fileClose:hover{background:rgba(0,229,163,.12);letter-spacing:5px;}
+#tortureOverlay{position:absolute;inset:0;z-index:87;background:rgba(10,4,6,.97);display:none;flex-direction:column;padding:26px 36px;overflow-y:auto;}
+#tortureOverlay.on{display:flex;}
+#tortureOverlay h2{
+  color:var(--crimson);letter-spacing:6px;
+  font-size:var(--fs-title);font-weight:400;
+  border-bottom:1px solid rgba(255,46,76,.35);
+  padding-bottom:12px;margin-bottom:8px;text-align:center;
+}
+#tortureOverlay .subtitle{color:#9a5258;text-align:center;font-size:var(--fs-small);letter-spacing:2px;margin-bottom:20px;}
+#tortureList{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:820px;width:100%;margin:0 auto;}
+.torture-card{border:1px solid rgba(255,46,76,.35);border-left:3px solid var(--crimson);padding:14px 16px;cursor:pointer;transition:all .15s;background:rgba(255,46,76,.04);}
+.torture-card:hover{background:rgba(255,46,76,.12);border-left-color:#ff5e78;}
+.torture-card h3{color:#ffc5cd;font-size:var(--fs-btn);letter-spacing:1.8px;font-weight:600;margin-bottom:6px;}
+.torture-card p{color:#a27a82;font-size:var(--fs-small);line-height:1.6;letter-spacing:.4px;}
+.torture-card.used{opacity:.35;cursor:not-allowed;border-left-color:#4a2a30;background:rgba(255,46,76,.01);}
+.torture-card.used h3{color:#7a5a60;}
+#tortureClose{margin:20px auto 0;background:transparent;border:1px solid rgba(0,229,163,.5);color:var(--cyan);font-family:inherit;font-size:var(--fs-btn);letter-spacing:3px;padding:9px 30px;cursor:pointer;transition:all .15s;}
+#tortureClose:hover{background:rgba(0,229,163,.12);letter-spacing:5px;}
+#menu{
+  position:absolute;inset:0;z-index:90;background:#080b0e;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:24px;overflow-y:auto;
+}
+#menu.hidden{display:none;}
+#menu h1{font-size:var(--fs-name);letter-spacing:12px;color:var(--cyan);font-weight:400;text-shadow:0 0 22px rgba(0,229,163,.45);}
+#menu h2{font-size:var(--fs-hud);letter-spacing:4px;color:#6a9d8c;font-weight:400;text-align:center;}
+#menu p{font-size:calc(var(--fs-body) * .95);color:#8aa89c;letter-spacing:1px;line-height:1.9;text-align:center;max-width:620px;}
+#nameInput{
+  background:transparent;border:none;border-bottom:1px solid rgba(0,229,163,.6);
+  color:var(--cyan);font-family:inherit;
+  font-size:calc(var(--fs-body) * 1.25);letter-spacing:6px;
+  text-align:center;padding:8px 16px;outline:none;width:min(280px, 78vw);caret-color:var(--cyan);
+}
+#nameInput::placeholder{color:#3a5a50;letter-spacing:3px;font-size:var(--fs-body);}
+.slot-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.slot-btn{
+  background:transparent;border:1px solid rgba(0,229,163,.4);
+  color:#8ac4b2;font-family:inherit;font-size:var(--fs-small);
+  letter-spacing:1.2px;padding:7px 14px;cursor:pointer;
+  transition:all .15s;min-width:118px;text-align:center;
+}
+.slot-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.slot-btn.active{background:rgba(0,229,163,.15);border-color:var(--cyan);color:var(--cyan);}
+.slot-btn.has-save{border-color:rgba(230,161,0,.6);color:#d9a840;}
+.slot-btn.has-save.active{background:rgba(230,161,0,.15);color:var(--amber);}
+.slot-btn .slot-line1{display:block;font-size:calc(var(--fs-small) * .9);letter-spacing:1px;}
+.slot-btn .slot-line2{display:block;font-size:calc(var(--fs-small) * .8);letter-spacing:1px;opacity:.8;margin-top:2px;}
+.main-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+#startBtn, #galleryBtn{
+  background:transparent;border:1px solid rgba(0,229,163,.5);
+  color:var(--cyan);font-family:inherit;font-size:var(--fs-btn);letter-spacing:5px;
+  padding:11px 38px;cursor:pointer;transition:all .2s;
+}
+#startBtn:hover, #galleryBtn:hover{background:rgba(0,229,163,.12);border-color:var(--cyan);letter-spacing:7px;}
+#galleryBtn{border-color:rgba(230,161,0,.5);color:var(--amber);}
+#galleryBtn:hover{background:rgba(230,161,0,.12);border-color:var(--amber);}
+.hint{font-size:var(--fs-small);color:#3a5a50;letter-spacing:1.6px;text-align:center;}
+#introScreen{position:absolute;inset:0;z-index:91;background:#080b0e;display:none;flex-direction:column;overflow-y:auto;}
+#introScreen.on{display:flex;}
+.intro-body{padding:40px 40px 30px 40px;max-width:920px;margin:0 auto;width:100%;flex:1 1 auto;}
+.intro-body h1{color:var(--cyan);font-size:var(--fs-title);letter-spacing:6px;font-weight:400;margin-bottom:24px;border-bottom:1px solid var(--line);padding-bottom:14px;}
+.intro-body p{color:var(--gray);font-size:var(--fs-body);line-height:1.9;margin-bottom:14px;letter-spacing:.3px;}
+.intro-body .amber{color:var(--amber);}
+.intro-body .quote{border-left:3px solid rgba(0,229,163,.5);padding:6px 16px;margin:18px 0;color:#9fe8d0;font-style:italic;font-size:var(--fs-body);line-height:1.85;}
+.intro-body .meta{color:#6a9d8c;font-size:var(--fs-small);letter-spacing:1px;line-height:1.8;}
+.intro-footer{padding:20px 40px 30px 40px;text-align:center;border-top:1px solid var(--line);background:var(--deep);}
+#introNext{background:transparent;border:1px solid rgba(0,229,163,.5);color:var(--cyan);font-family:inherit;font-size:var(--fs-btn);letter-spacing:4px;padding:12px 40px;cursor:pointer;transition:all .2s;}
+#introNext:hover{background:rgba(0,229,163,.12);border-color:var(--cyan);letter-spacing:6px;}
+#galleryScreen, #endingGuide{position:absolute;inset:0;z-index:95;background:#080b0e;display:none;flex-direction:column;padding:28px 32px;overflow-y:auto;}
+#galleryScreen.on, #endingGuide.on{display:flex;}
+#galleryScreen h2, #endingGuide h2{color:var(--cyan);letter-spacing:6px;font-size:var(--fs-title);font-weight:400;text-align:center;margin-bottom:6px;}
+#galleryScreen .subtitle, #endingGuide .subtitle{color:#6a9d8c;text-align:center;font-size:var(--fs-small);letter-spacing:2px;margin-bottom:22px;}
+#galleryGrid{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;max-width:980px;width:100%;margin:0 auto;}
+.gallery-slot{
+  border:1px solid rgba(0,229,163,.3);padding:14px 10px;text-align:center;
+  background:rgba(0,229,163,.03);min-height:130px;
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:6px;
+  transition:all .2s;
+}
+.gallery-slot.unlocked{border-color:rgba(230,161,0,.6);background:rgba(230,161,0,.07);}
+.gallery-slot .slot-title{font-size:var(--fs-btn);letter-spacing:3px;color:#3f6a5e;}
+.gallery-slot.unlocked .slot-title{color:var(--amber);}
+.gallery-slot .slot-sub{font-size:var(--fs-small);letter-spacing:1.5px;color:#3f6a5e;}
+.gallery-slot.unlocked .slot-sub{color:#a8842e;}
+.gallery-slot .lock{font-size:22px;color:#3f6a5e;}
+.gallery-slot.unlocked .lock{color:var(--amber);font-size:16px;}
+.gallery-slot .slot-summary{font-size:calc(var(--fs-small) * .9);line-height:1.5;color:#8aa89c;letter-spacing:.3px;margin-top:4px;text-align:center;}
+.gallery-slot.unlocked .slot-summary{color:#d5b66e;}
+#guideList{max-width:880px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.guide-row{border-left:3px solid var(--amber);padding:10px 14px;background:rgba(230,161,0,.05);display:flex;flex-direction:column;gap:4px;}
+.guide-row .g-title{color:var(--amber);font-size:var(--fs-btn);letter-spacing:3px;}
+.guide-row .g-cond{color:#9fb8b0;font-size:var(--fs-small);letter-spacing:.4px;line-height:1.7;}
+.guide-row.locked{border-left-color:#3f6a5e;background:transparent;}
+.guide-row.locked .g-title{color:#3f6a5e;}
+.guide-row.locked .g-cond{color:#3f6a5e;}
+.backBtn{margin:22px auto 0;background:transparent;border:1px solid rgba(0,229,163,.5);color:var(--cyan);font-family:inherit;font-size:var(--fs-btn);letter-spacing:3px;padding:9px 30px;cursor:pointer;transition:all .15s;}
+.backBtn:hover{background:rgba(0,229,163,.12);letter-spacing:5px;}
+.glitch{animation:glitchAnim .2s steps(2) 1;}
+@keyframes glitchAnim{
+  0%{filter:invert(1) hue-rotate(90deg);transform:translate(0);}
+  33%{filter:invert(1) contrast(2.4);transform:translate(-6px,2px) skewX(2deg);}
+  66%{filter:invert(.6) hue-rotate(-45deg);transform:translate(5px,-3px);}
+  100%{filter:none;transform:translate(0);}
+}
+.tear{position:absolute;left:0;right:0;height:34px;background:rgba(230,161,0,.3);mix-blend-mode:screen;z-index:70;pointer-events:none;animation:tearMove .2s linear 1;}
+@keyframes tearMove{0%{top:20%;opacity:1;} 50%{top:62%;opacity:.8;} 100%{top:88%;opacity:0;}}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:rgba(0,229,163,.05);}
+::-webkit-scrollbar-thumb{background:rgba(0,229,163,.25);border-radius:0;}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,229,163,.4);}
+.cursor::after{content:"█";color:var(--cyan);animation:blink2 .7s steps(1) infinite;margin-left:2px;font-size:.9em;}
+@keyframes blink2{50%{opacity:0;}}
+@media (max-width: 1100px){
+  :root{--fs-body:13px; --fs-obs:12.5px; --fs-btn:13px; --fs-hud:11px; --fs-small:10.5px;}
+  #main{grid-template-columns:58% 42%;}
+}
+@media (orientation: portrait) and (max-width: 820px){
+  :root{--fs-body:14px; --fs-obs:13.5px; --fs-btn:14px; --fs-hud:11.5px; --fs-small:11px; --fs-title:18px; --fs-name:20px;}
+  body{background:var(--base);}
+  #crt{width:100vw;height:100dvh;height:100vh;box-shadow:none;}
+  #topbar{gap:6px 10px;padding:7px 12px;font-size:11px;}
+  .tb-left{font-size:11px;letter-spacing:1.2px;}
+  .tb-spacer{display:none;}
+  #main{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  #right{order:-1;max-height:22dvh;max-height:22vh;border-right:none;border-bottom:1px solid var(--line);padding:9px 12px;}
+  .rhead{margin-bottom:7px;padding-bottom:6px;font-size:11px;}
+  #observe{font-size:12.5px;line-height:1.7;}
+  .obsline{margin-bottom:8px;padding-left:8px;}
+  #tortureBtn{margin-top:6px;padding:8px 10px;font-size:12.5px;letter-spacing:1.2px;}
+  #histwrap{padding:12px 14px 8px 14px;}
+  .line{margin-bottom:10px;}
+  #dock{max-height:44vh;max-height:44dvh;padding:9px 12px 12px 12px;}
+  .dockhead{font-size:11px;}
+  .dockhead .dim{display:none;}
+  #docklist{gap:7px;}
+  .qbtn{font-size:13.5px;padding:11px 12px;line-height:1.55;}
+  .qbtn:hover{transform:none;}
+  #bottombar{flex-wrap:wrap;gap:5px 14px;padding:8px 12px;font-size:11px;}
+  .bar{width:90px;height:5px;}
+  #bottombar .tb-spacer{display:none;}
+  #menu{gap:14px;padding:20px 16px;}
+  #menu h1{letter-spacing:8px;}
+  #menu p{font-size:13px;line-height:1.8;}
+  #nameInput{font-size:18px;letter-spacing:5px;padding:7px 12px;}
+  #startBtn, #galleryBtn{padding:10px 28px;letter-spacing:3px;}
+  .slot-btn{min-width:88px;padding:7px 10px;font-size:10.5px;}
+  #tortureOverlay{padding:18px 18px;}
+  #tortureList{grid-template-columns:1fr;gap:9px;}
+  #tortureOverlay h2{font-size:18px;letter-spacing:4px;}
+  #galleryScreen, #endingGuide{padding:18px 14px;}
+  #galleryGrid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  #galleryScreen h2, #endingGuide h2{font-size:18px;letter-spacing:4px;}
+  #blacktext{padding:0 6%;font-size:13.5px;line-height:1.9;}
+  .file-body{padding:18px 18px;}
+  .intro-body{padding:24px 22px;}
+  .intro-footer{padding:16px 22px;}
+}
+@media (orientation: landscape) and (max-height: 500px){
+  :root{--fs-body:12.5px; --fs-obs:12px; --fs-btn:12.5px; --fs-hud:10.5px; --fs-small:10px; --fs-title:16px; --fs-name:18px; --lh-body:1.6; --lh-obs:1.6;}
+  #main{grid-template-columns:64% 36%;}
+  #histwrap{padding:10px 14px 6px 14px;}
+  #dock{max-height:50%;padding:8px 14px 10px 14px;}
+  #right{padding:10px 12px;}
+  #observe{font-size:12px;line-height:1.65;}
+  #topbar{padding:6px 12px;gap:10px;}
+  #bottombar{padding:7px 12px;gap:14px;}
+  .bar{width:88px;height:5px;}
+}
+</style>
+</head>
+<body>
+
+<div id="crt" class="flick">
+  <div class="scanlines"></div>
+  <div class="vig"></div>
+
+  <header id="topbar">
+    <span class="tb-left">MIRROR INTERROGATION <span class="dim">// 鏡像審訊</span></span>
+    <span>系統時間: <b id="clock">DAY 1 — 09:00</b></span>
+    <span>回合: <b id="roundLabel">1 / 9</b></span>
+    <span class="tb-spacer"></span>
+    <button class="tb-btn" id="fileBtnTop">// 查閱檔案</button>
+    <span>監控波形: <span id="wave" class="ok">正常</span></span>
+  </header>
+
+  <main id="main">
+    <section id="left">
+      <div id="histwrap"><div id="history"></div></div>
+      <div id="dock">
+        <div class="dockhead">
+          <span>// 審訊終端 — 選項</span>
+          <span class="dim">每個問題都將改變他的狀態</span>
+        </div>
+        <div id="docklist"><div class="docklabel">[ 等待系統載入… ]</div></div>
+      </div>
+    </section>
+
+    <section id="right">
+      <div class="rhead">// W 動態觀察與行為監控</div>
+      <div id="observe"><div class="obsline dim">[ 尚未建立觀測連結 ]</div></div>
+      <button id="tortureBtn" disabled>// 特殊手段 — 未發放</button>
+    </section>
+  </main>
+
+  <footer id="bottombar">
+    <span>心率: <b id="bpm">--</b> BPM</span>
+    <span>腦波異常度: <b id="brain">--</b>%<span class="bar" id="brainBar"><i></i></span></span>
+    <span class="tb-spacer" style="flex:1"></span>
+    <span>監聽狀態: <b id="rec">錄音中</b></span>
+  </footer>
+
+  <div id="fade"></div>
+  <div id="blacktext"></div>
+
+  <div id="fileOverlay">
+    <div class="file-header">
+      <div><h2>// W-0731 犯罪檔案</h2><div class="subtitle">機密等級 3-A — 政府內部審閱</div></div>
+      <div class="file-actions">
+        <button class="file-btn" id="modeHighlight">螢光筆</button>
+        <button class="file-btn" id="modeMark">圈選</button>
+        <button class="file-btn" id="modeClear">清除全部</button>
+      </div>
+    </div>
+    <div class="file-body" id="fileBody"></div>
+    <div class="file-footer"><button id="fileClose">閉 合 檔 案</button></div>
+  </div>
+
+  <div id="tortureOverlay">
+    <h2>特 殊 手 段</h2>
+    <div class="subtitle">// 政府授權執行</div>
+    <div id="tortureList"></div>
+    <button id="tortureClose">返 回</button>
+  </div>
+
+  <div id="introScreen">
+    <div class="intro-body" id="introBody"></div>
+    <div class="intro-footer"><button id="introNext">進 入 審 訊 室</button></div>
+  </div>
+
+  <div id="menu">
+    <h2>GOVERNMENT INTERROGATION SYSTEM v4.7</h2>
+    <h1>鏡 像 審 訊</h1>
+    <p>你是編號 KB-114 的審訊官。<br>對面坐著代號「W」的犯人。<br>你有三天的時間，每天九個回合。<br>每個回合，三個問題。</p>
+    <div class="slot-row" id="slotRow">
+      <button class="slot-btn active" data-slot="1"><span class="slot-line1">槽位 一</span><span class="slot-line2">空</span></button>
+      <button class="slot-btn" data-slot="2"><span class="slot-line1">槽位 二</span><span class="slot-line2">空</span></button>
+      <button class="slot-btn" data-slot="3"><span class="slot-line1">槽位 三</span><span class="slot-line2">空</span></button>
+    </div>
+    <input id="nameInput" type="text" maxlength="6" placeholder="輸入你的名字" autocomplete="off">
+    <div class="main-btns">
+      <button id="startBtn">開 始</button>
+      <button id="galleryBtn">結 局 畫 廊</button>
+    </div>
+    <div class="hint">點擊畫面可跳過文字輸出</div>
+  </div>
+
+  <div id="galleryScreen">
+    <h2>結 局 畫 廊</h2>
+    <div class="subtitle">// 已解鎖的結局紀錄</div>
+    <div id="galleryGrid"></div>
+    <button class="backBtn" id="galleryBack">返 回</button>
+  </div>
+
+  <div id="endingGuide">
+    <h2>全 結 局 達 成</h2>
+    <div class="subtitle">// 快速版攻略</div>
+    <div id="guideList"></div>
+    <button class="backBtn" id="guideBack">返 回</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+let typingSkip = false;
+document.addEventListener('click', () => { typingSkip = true; });
+document.addEventListener('touchstart', () => { typingSkip = true; }, {passive:true});
+
+let actx = null;
+function ac(){
+  if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+  if(actx && actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function sfxSubmerge(){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
+  o.type='sine';
+  o.frequency.setValueAtTime(220, c.currentTime);
+  o.frequency.exponentialRampToValueAtTime(38, c.currentTime+0.95);
+  f.type='lowpass'; f.frequency.setValueAtTime(700, c.currentTime);
+  f.frequency.exponentialRampToValueAtTime(120, c.currentTime+0.95);
+  g.gain.setValueAtTime(0.0001, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.16, c.currentTime+0.05);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+1.0);
+  o.connect(f); f.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+1.05);
+}
+function sfxClick(){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type='square'; o.frequency.setValueAtTime(1400, c.currentTime);
+  g.gain.setValueAtTime(0.022, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.04);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+0.045);
+}
+function sfxAlarm(){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type='sawtooth';
+  o.frequency.setValueAtTime(90, c.currentTime);
+  o.frequency.linearRampToValueAtTime(220, c.currentTime+0.5);
+  g.gain.setValueAtTime(0.045, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.7);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime+0.75);
+}
+
+function makeDefaultState(){
+  return {
+    day: 1, round: 1,
+    used: {}, flags: {},
+    torturesUsed: {},
+    torturesAvailable: { 'T05': false, 'T11': false, 'T16': false, 'T23': false },
+    Trust_P: 10, Kill_P: 20, Know_Pw: 0,
+    Health_W: 100, Grief_W: 0, Know_Wp: 0, GovSuspect: 0,
+    name: '小白鼠',
+    lastTag: null, streak: 0, streakBonus: false,
+    tortureToday: false, ended: false, dead: false,
+    askedCount: 0, currentSlot: 1,
+    marks: {}, markedMode: null,
+    pain: 0, fog: 0,
+  };
+}
+let state = makeDefaultState();
+
+const FILE_HTML = `
+<h3>一、基本資料</h3>
+<p><span class="meta">姓名：</span>████████████（姓名欄位疑似遭人為刪除。原始建檔資料應另有來源。）</p>
+<p><span class="meta">代號：</span>W-0731</p>
+<p><span class="meta">性別：</span>男　<span class="meta">年齡：</span>約 34 歲</p>
+<p><span class="meta">身高：</span>187 cm　<span class="meta">體重：</span>71 kg（入監初檢值，第三日複檢降至 68 kg）</p>
+<p><span class="meta">血型：</span>AB 型　<span class="meta">國籍：</span>不詳</p>
+<p><span class="meta">建檔日期：</span>三年前九月十一日</p>
+<p><span class="meta">檔案建立人：</span>本局第三處　代號 K-09</p>
+
+<h3>二、逮捕經過</h3>
+<p>W-0731 於本年三月十二日凌晨三時，被發現獨自一人停留於城東第三號水閘旁的廢棄船塢。當時他身上沒有攜帶任何武器，沒有攜帶任何通訊設備，也沒有攜帶任何身分證明。緝捕小組到場時，他正坐在船塢邊緣，面向海面。</p>
+<p>緝捕過程中，W-0731 未作任何抵抗。根據現場人員記錄，他在被戴上手銬時僅說了一句話：「終於等到了。」</p>
+<p>現場人員記錄補充：W-0731 被戴上手銬後，曾低頭看了一眼自己的左手腕，然後輕微地笑了一下。此動作在原始紀錄中被標註為「無特殊意義」。</p>
+<p><span class="meta">附註：</span>本次逮捕行動之觸發情報，來源不明。情報管道代號已由中央情報局接手處理，本檔案不另記錄。相關交接文件編號已佚失。</p>
+
+<h3>三、身分背景</h3>
+<p>W-0731 於三年前首度出現在政府機密檔案中。此前所有公開紀錄、戶籍資料、醫療紀錄、教育紀錄皆為空白。生物辨識資料庫中查無此人之原始建檔紀錄。</p>
+<p>根據現有情報推斷，W-0731 極可能為舊時代生物研究所「白鴉計畫」之核心成員之一。該計畫在五年前由政府接管後宣告終止，所有人員檔案已由本局封存。</p>
+<p>白鴉計畫在五年前由政府下令終止。終止命令之執行方式為「全面清除」。當時登記在案的實驗體共計十七名，研究員共計六名。清除行動結束後，官方紀錄顯示僅有十三名實驗體與四名研究員「完成移交」。</p>
+<p><span class="meta">附註：</span>所謂「完成移交」之定義，本檔案不另說明。相關細節須由局長簽核後另案調閱。</p>
+
+<h3>四、犯罪事實（現有掌握部分）</h3>
+<p>一、三年前九月，W-0731 涉嫌於西側海岸區發動代號「潮汐」之武裝行動。行動造成政府設施損毀七處、人員傷亡十九人（其中三人死亡）。政府官方定性為「恐怖攻擊」。</p>
+<p>二、兩年前冬天，W-0731 涉嫌於城北地下鐵路樞紐策劃爆炸裝置。該裝置最終於引爆前被拆除。拆除者身分不明。現場未發現第三人指紋。</p>
+<p>三、一年前，W-0731 涉嫌與境外敵對勢力接頭，轉移政府機密研究資料共計三批。資料內容為基因改造相關實驗數據。經查，接收方為一個代號「潮汐」的境外組織。</p>
+<p><span class="meta">附註：</span>上述三項犯罪事實，第一項有現場目擊證人共四人（其中三人已於本檔案建檔後陸續意外身亡）。第二項證據為裝置殘骸（殘骸上未發現任何指紋）。第三項證據為情報截獲之通聯紀錄（該紀錄之通話對象身分未經核實）。</p>
+
+<h3>五、審訊歷史</h3>
+<p>W-0731 被捕後，於本局地下三層第七審訊室接受過三次初步審訊。前三次審訊皆由審訊官 KB-088 執行。三次審訊均未能取得有效供詞。W-0731 在三次審訊中皆保持沉默或答非所問。</p>
+<p>第四次審訊（即本次）改由審訊官 KB-114 執行。</p>
+<p><span class="meta">附註：</span>審訊官 KB-088 於第三次審訊結束後三日內申請調職。目前行蹤不明。</p>
+
+<h3>六、健康狀況（入監初檢）</h3>
+<p><span class="meta">身高體重：</span>符合通報值</p>
+<p><span class="meta">身上舊傷：</span>左肩有貫穿型槍傷，推測為研究所制式防衛武器所造成；右側肋骨有兩處陳舊性骨折痕跡；左手腕內側有環形壓痕，疑似長期束縛造成；後頸有兩處不明注射痕，痕跡已完全癒合，推測為早年留下。</p>
+<p><span class="meta">其他異常：</span>對特定鎮靜劑成分（編號 S-47 及 S-52）有明顯耐受性。此種耐受性通常見於長期接觸該類藥物之人員。</p>
+<p><span class="meta">精神狀態：</span>入監評估為「清醒、配合、無明顯精神異常」。</p>
+<p><span class="meta">附註：</span>初檢醫師於本檔案建檔後一個月內離職。離職原因欄填寫為「個人因素」。</p>
+
+<h3>七、其他觀察紀錄</h3>
+<p>W-0731 入監至今，共計 47 天。期間拒絕與任何獄警交談，拒絕接受探視，拒絕書寫任何陳述書。每日固定時間起床、進食、就寢，作息極為規律。</p>
+<p>據值班獄警紀錄，W-0731 每天晚上都會面向牆壁，維持同一姿勢入睡。值班人員曾多次觀察到他在睡夢中反覆念同一個詞，內容不明，發音近似「小白」。</p>
+<p>值班獄警另記錄：W-0731 在入睡前，都會用手指在自己左手腕內側輕輕按壓，前後共計三次，如同某種儀式。此動作持續 47 天從未中斷。</p>
+<p><span class="meta">附註：</span>上開紀錄由值班獄警李○○、林○○提供。兩名獄警已於本檔案建檔後一週內調職。目前通訊地址皆已失效。</p>
+
+<h3>八、案件疑點整理（本檔案審閱者自行加註）</h3>
+<p>一、姓名欄位為何遭刪除？若原始建檔單位另有記錄，為何未隨檔移轉？</p>
+<p>二、逮捕情報來源不明，為何未詳加追查即行逮捕？</p>
+<p>三、白鴉計畫的「完成移交」究竟是指什麼？十七名實驗體，僅十三名完成移交，其餘四人下落為何？</p>
+<p>四、目擊證人三人意外身亡，時間點過於集中，是否另有隱情？</p>
+<p>五、審訊官 KB-088 調職後行蹤不明，是否與本案有關？</p>
+<p>六、初檢醫師離職原因過於簡略，是否另有壓力來源？</p>
+<p>七、W-0731 為何在被捕時說「終於等到了」？他在等誰？</p>
+<p><span class="meta">附註：</span>以上七點為本檔案審閱者（審訊官 KB-114）自行加註。加註時間為本次審訊前一日凌晨。</p>
+`;
+
+const ROUNDS = {
+'D1R1': {
+  ambient:'審訊室的燈管發出很低頻率的嗡鳴。鐵桌上有一道舊刮痕，像是有人用指甲反覆刮過。W 坐在對面，雙手平放在桌上。',
+  options: [
+    { id:'D1R1a', tag:'pressure', text:'先從基本資料開始。姓名、組織、活動據點。',
+      eff:{Kill_P:5, Trust_P:-5},
+      reply:'姓名不重要。組織也不重要。至於據點——你們找不到的地方，就是我們的據點。',
+      obs:'他把身體往椅背靠。鐵鍊繃了一下。他沒有移開視線。',
+      obs2:'他的左手食指在桌上敲了兩下，很慢。' },
+    { id:'D1R1b', tag:'neutral', text:'你被捕那天，身上沒有帶任何東西。為什麼？',
+      eff:{Trust_P:5, Know_Wp:3},
+      reply:'因為我本來就沒打算逃。',
+      obs:'他的語氣很平，不像在說謊。他說完之後，視線落在你胸前的識別證上。' },
+    { id:'D1R1c', tag:'memory', special:true, unlocks:'D1R4',
+      text:'三年前九月，西側海岸。檔案上寫的是「潮汐行動」。你對這個名字有印象嗎？',
+      eff:{Know_Pw:5, Grief_W:5, Kill_P:-3},
+      reply:'……那不是行動代號。那是那一天的天氣。',
+      obs:'他第一次主動抬起頭看你。他的眼睛裡有一種說不清的東西。',
+      obs2:'他停頓了兩秒，像是想再說什麼，最後還是沒說。' },
+    { id:'D1R1d', tag:'neutral', text:'我們從你的檔案開始。你有沒有什麼要補充的？',
+      eff:{Trust_P:3, Know_Wp:2},
+      reply:'檔案上寫的，你們自己相信就好。',
+      obs:'他看著你，像是在評估你會怎麼反應。' }
+  ]
+},
+'D1R2': {
+  ambient:'走廊外面有人在走動。腳步聲很重，是巡邏的獄警。',
+  options: [
+    { id:'D1R2a', tag:'pressure', text:'你的同夥還在城裡。他們在等什麼？',
+      eff:{Kill_P:5, Trust_P:-3},
+      reply:'他們在等一個不會來的人。',
+      obs:'他的視線落在牆角的攝影機上。那顆紅燈正亮著。' },
+    { id:'D1R2b', tag:'neutral', text:'前三次審訊你都保持沉默。為什麼這次願意開口？',
+      eff:{Trust_P:8, Know_Wp:5},
+      reply:'因為換人了。',
+      obs:'他沒有解釋為什麼換人，他就不一樣了。他只是看著你，很輕地笑了一下。' },
+    { id:'D1R2c', tag:'memory', special:true, unlocks:'D2R7',
+      text:'你左肩的舊傷。法醫報告說是研究所的制式武器造成的。',
+      eff:{Know_Pw:10, Know_Wp:8},
+      reply:'法醫報告很準。可惜他們沒寫——那道傷是我自己擋下來的。',
+      obs:'他下意識摸了一下左肩，手指在傷口的位置停了零點幾秒。',
+      obs2:'那道傷很深。如果他當時沒有擋，子彈會打到更裡面。' },
+    { id:'D1R2d', tag:'care', text:'你的身體狀況看起來不太好。你昨晚有睡嗎？',
+      eff:{Trust_P:5, Grief_W:5},
+      reply:'睡了一會。',
+      obs:'他的眼窩有點陷。他沒有多說。' }
+  ]
+},
+'D1R3': {
+  ambient:'空氣裡有一種很淡的金屬味，像是血乾掉之後留下的。',
+  options: [
+    { id:'D1R3a', tag:'pressure', text:'政府說你是基因改造專家。你拿活體做實驗。',
+      eff:{Kill_P:8, Grief_W:10},
+      reply:'我是。',
+      obs:'他答得太快了。快到像是早就準備好這句話，等著有人問。' },
+    { id:'D1R3b', tag:'care', special:true, unlocks:'D2R4',
+      text:'你入監四十七天。獄警說你每天晚上都唸同一個詞。',
+      eff:{Trust_P:10, Know_Pw:5, Grief_W:8},
+      reply:'……他們連這個都記？',
+      obs:'他的表情第一次鬆動了一下。那個變化很細微，但你看到了。' },
+    { id:'D1R3c', tag:'neutral', text:'你對政府的白鴉計畫知道多少？',
+      eff:{Know_Pw:8, Know_Wp:5, GovSuspect:3},
+      reply:'白鴉計畫已經終止五年了。你問一個死掉的東西，是想知道什麼？',
+      obs:'他反問你的時候，語調比前面任何一句都慢。' },
+    { id:'D1R3d', tag:'pressure', text:'你的組織名稱，或者你所謂的「同夥」，到底是誰？',
+      eff:{Kill_P:5, Trust_P:-3},
+      reply:'沒有組織。你們的檔案寫錯了。',
+      obs:'他的嘴角動了一下。' }
+  ]
+},
+'D1R4': {
+  ambient:'下午的光線從通風口斜射進來，把鐵桌切成兩半。W 坐在背光的一側。',
+  options: [
+    { id:'D1R4c', tag:'memory', special:true, requires:'D1R4', unlocks:'D2R2',
+      text:'那一天的天氣——你剛才說的。是什麼天氣？',
+      eff:{Know_Pw:15, Know_Wp:10, Grief_W:-5, Trust_P:5},
+      reply:'下著雨。海水很冷。我把一個人從水裡撈出來的時候，他已經不喘氣了。',
+      obs:'他說完之後閉上眼睛。你看見他的睫毛在抖。' },
+    { id:'D1R4a', tag:'neutral', text:'你的真實姓名，檔案上是空白的。你在隱瞞什麼？',
+      eff:{Trust_P:-3, Know_Wp:3},
+      reply:'不是我在隱瞞。是你們把我的名字弄丟了。',
+      obs:'他看著你的眼睛，說得很慢。' },
+    { id:'D1R4b', tag:'memory', text:'審訊紀錄顯示你對編號 S-47 鎮靜劑有耐受性。你接觸過這種藥？',
+      eff:{Know_Pw:10, Trust_P:3},
+      reply:'那種藥……我曾經每天親手調配。為了一個人。',
+      obs:'他的語氣像在念一段祈禱文。' },
+    { id:'D1R4d', tag:'care', text:'你身上的傷都是舊的。最近有沒有添新的？',
+      eff:{Trust_P:5, Grief_W:5},
+      reply:'沒有。你們抓我那天，我沒有反抗。',
+      obs:'他說話的時候，視線落在自己的手腕上。' }
+  ]
+},
+'D1R5': {
+  ambient:'獄警從門外經過，在窺視孔上停了一下，然後走開。',
+  options: [
+    { id:'D1R5a', tag:'pressure', text:'你被捕時說了一句「終於等到了」。你在等什麼？',
+      eff:{Trust_P:8, Know_Wp:5, Kill_P:-3},
+      reply:'我在等一個機會。一個能讓我把話說清楚的機會。',
+      obs:'他微微往前傾，但鐵鍊沒拉直。' },
+    { id:'D1R5b', tag:'care', text:'你在監獄裡拒絕對任何人開口。你為什麼願意跟我說話？',
+      eff:{Trust_P:10, Know_Wp:8},
+      reply:'因為你的眼睛……你進來的時候，我就知道了。',
+      obs:'他說到一半停住了，像是意識到自己說太多。' },
+    { id:'D1R5c', tag:'memory', special:true, unlocks:'D2R6',
+      text:'你右手肋骨有兩處陳舊性骨折。那是什麼時候的事？',
+      eff:{Know_Pw:8, Grief_W:6},
+      reply:'逃跑的時候摔的。我抱著一個人，不能放手，所以只能自己撞上去。',
+      obs:'他的手指在膝上收緊，指節發白。' },
+    { id:'D1R5d', tag:'neutral', text:'你被捕之前，有沒有去過西側海岸？',
+      eff:{Know_Pw:3, Know_Wp:3},
+      reply:'去過。看海。',
+      obs:'他答得很短。' }
+  ]
+},
+'D1R6': {
+  ambient:'審訊室裡的時鐘走到下午兩點十七分。鐘面的指針走得很慢。',
+  options: [
+    { id:'D1R6a', tag:'pressure', text:'你知道你現在說的每一句話都會成為定罪依據嗎？',
+      eff:{Trust_P:5, GovSuspect:2},
+      reply:'我知道。',
+      obs:'他沒有多餘的反應。他只是看著你。' },
+    { id:'D1R6b', tag:'care', special:true, unlocks:'D2R3',
+      text:'你左手腕內側有環形的壓痕。那是長期束縛造成的。',
+      eff:{Know_Pw:10, Trust_P:5, Grief_W:6},
+      reply:'那不是你們造成的。那是更早以前的事。',
+      obs:'他把左手縮回袖口裡。那個動作很快，快到像是本能。' },
+    { id:'D1R6c', tag:'memory', special:true, unlocks:'D2R1',
+      text:'檔案裡寫，你對特定藥物的耐受性通常見於長期接觸該類藥物的人。你照顧過誰？',
+      eff:{Know_Pw:15, Know_Wp:8, Grief_W:-3},
+      reply:'……一隻小白鼠。',
+      obs:'他說這四個字的時候，聲音特別輕。',
+      obs2:'他說「小白鼠」的時候，用的是「他」，不是「牠」。' },
+    { id:'D1R6d', tag:'neutral', text:'你的入監評估寫著「無明顯精神異常」。你自己怎麼看？',
+      eff:{Know_Wp:3, Trust_P:2},
+      reply:'那份評估寫得很客氣。',
+      obs:'他說這句話的時候，嘴角有個很短的笑。' }
+  ]
+},
+'D1R7': {
+  ambient:'通風口吹進來的風帶著一股海水的腥味。雖然這裡距離海岸至少有七公里。',
+  options: [
+    { id:'D1R7a', tag:'pressure', text:'你被捕那天的情報來源不明。你知道是誰出賣你的嗎？',
+      eff:{Kill_P:5, GovSuspect:3},
+      reply:'知道。',
+      obs:'他說「知道」的時候，語氣沒有任何起伏。' },
+    { id:'D1R7b', tag:'neutral', text:'你為誰工作？你的組織背後是誰？',
+      eff:{Trust_P:3, Know_Wp:3},
+      reply:'我沒有組織。你們寫在檔案上的那些，全是編的。',
+      obs:'他的嘴角動了一下。不算笑。' },
+    { id:'D1R7c', tag:'care', text:'你在監獄裡每天面向牆壁入睡。為什麼？',
+      eff:{Trust_P:10, Grief_W:10},
+      reply:'……那樣比較像以前。',
+      obs:'他沒有說「以前」是什麼時候。他只是看著桌面。' },
+    { id:'D1R7d', tag:'memory', text:'檔案裡說你每天晚上睡前都會按壓左手腕三次。那是什麼儀式？',
+      eff:{Know_Pw:8, Know_Wp:5, Grief_W:5},
+      reply:'……不是儀式。只是確認一下。',
+      obs:'他沒有說「確認什麼」。' }
+  ]
+},
+'D1R8': {
+  ambient:'外面的天色開始暗下來。審訊室的燈自動調整了亮度，變得更刺眼。',
+  options: [
+    { id:'D1R8a', tag:'pressure', text:'你在策劃什麼？你被捕了，但你還有同夥在外面。',
+      eff:{Kill_P:6, Trust_P:-3},
+      reply:'隨你怎麼寫。反正你們的檔案裡，我早就是恐怖分子了。',
+      obs:'他別開臉。他的側臉線條比正面看起來更硬。' },
+    { id:'D1R8b', tag:'memory', text:'你身上的舊傷，每一道都對應一次逃亡。你逃了幾次？',
+      eff:{Know_Pw:10, Grief_W:5},
+      reply:'三次。第一次逃出來，第二次帶人出來，第三次……',
+      obs:'他停下來了，沒有把第三次說完。' },
+    { id:'D1R8c', tag:'care', text:'你的身體狀況很不好。你想過自己可能撐不過這三天嗎？',
+      eff:{Trust_P:8, Grief_W:8, Know_Wp:5},
+      reply:'如果我撐不過，那也是好事。',
+      obs:'他說這句話的時候，看著你的方向。' },
+    { id:'D1R8d', tag:'neutral', text:'你的左手袖口，一直扣得很緊。為什麼？',
+      eff:{Know_Pw:5, Know_Wp:3},
+      reply:'習慣。',
+      obs:'他把左手稍微往後縮了一點。' }
+  ]
+},
+'D1R9': {
+  ambient:'今天的最後一個小時。W 的呼吸比早上更慢。',
+  options: [
+    { id:'D1R9a', tag:'pressure', special:true, unlocks:'D2R8',
+      text:'你想從我這裡得到什麼？',
+      eff:{Trust_P:5, Know_Wp:5, Kill_P:-3},
+      reply:'我什麼都不想得到。我只是想確認一件事。',
+      obs:'他的目光掃過你的臉，在你下巴的位置停了一下。' },
+    { id:'D1R9b', tag:'memory', text:'如果一個人失去了所有記憶，他還算是原來的自己嗎？',
+      eff:{Know_Pw:15, Know_Wp:15},
+      reply:'算。因為本能會記得。比如變身的習慣，比如對危險的直覺。',
+      obs:'他前傾身體。鐵鍊第一次發出響聲。' },
+    { id:'D1R9c', tag:'care', special:true, unlocks:'D2R6',
+      text:'明天是最後兩天了。你有什麼想讓我問你的嗎？',
+      eff:{Trust_P:12, Know_Wp:8, Grief_W:-5},
+      reply:'……問我小白鼠。',
+      obs:'他說這三個字的時候，眼睛沒有離開你。' },
+    { id:'D1R9d', tag:'neutral', text:'你今天說話的語氣，和早上不太一樣。',
+      eff:{Know_Pw:5, Grief_W:5},
+      reply:'你們不會有記錄的時候。',
+      obs:'他的視線落在桌上。' }
+  ]
+},
+'D2R1': {
+  ambient:'早上九點。W 今天看起來比昨天更瘦。獄警說他昨夜沒有進食。',
+  options: [
+    { id:'D2R1a', tag:'pressure', text:'昨晚我核對了你的檔案。你在白鴉計畫裡的角色，被標註為「臨床研究」。',
+      eff:{Kill_P:8, Grief_W:10, Know_Wp:5},
+      reply:'臨床研究？他們這樣寫我？',
+      obs:'他笑了。那個弧度很冷。' },
+    { id:'D2R1b', tag:'care', special:true, unlocks:'D2R5',
+      text:'我昨晚做了一個夢。夢見海水，還有針頭。',
+      eff:{Know_Pw:15, Know_Wp:12, Trust_P:5, Grief_W:-5},
+      reply:'……你想起來了？',
+      obs:'他的呼吸瞬間亂了。他的瞳孔縮了一下。' },
+    { id:'D2R1c', tag:'memory', special:true, requires:'D2R1', unlocks:'D2R7',
+      text:'你剛才說的那個夢——後來呢？',
+      eff:{Know_Pw:18, Know_Wp:15, Trust_P:8, Grief_W:-5},
+      reply:'……你說什麼？',
+      obs:'他的聲音有點抖。' },
+    { id:'D2R1d', tag:'neutral', text:'你今天早上沒吃東西。為什麼？',
+      eff:{Grief_W:5, Trust_P:3},
+      reply:'沒胃口。',
+      obs:'他把臉別開。' }
+  ]
+},
+'D2R2': {
+  ambient:'外面的天氣變了。雨聲從通風口傳進來，很密。',
+  options: [
+    { id:'D2R2c', tag:'memory', special:true, requires:'D2R2', unlocks:'D2R5',
+      text:'那一天你把那個人從水裡撈出來之後，他活下來了嗎？',
+      eff:{Know_Pw:20, Know_Wp:15, Grief_W:-10, Trust_P:8},
+      reply:'活下來了。可是他不記得我了。',
+      obs:'他看著你，眼神裡有一種非常疲倦的東西。' },
+    { id:'D2R2a', tag:'pressure', text:'你昨晚又唸那個詞了。值班的人聽見了。',
+      eff:{Trust_P:-3, Grief_W:8, Know_Wp:5},
+      reply:'……以後不會了。',
+      obs:'他把臉轉向另一側。' },
+    { id:'D2R2b', tag:'neutral', text:'你在牢裡四十七天，有沒有人來探視過你？',
+      eff:{Grief_W:10, Trust_P:3},
+      reply:'沒有。也不會有人來。',
+      obs:'他這句話說得很快。' },
+    { id:'D2R2d', tag:'care', text:'你昨晚睡得不好嗎？',
+      eff:{Trust_P:5, Grief_W:5},
+      reply:'不太好。',
+      obs:'他的眼下有很深的陰影。' }
+  ]
+},
+'D2R3': {
+  ambient:'雨下大了。審訊室外的走廊傳來積水被踩過的濺水聲。',
+  options: [
+    { id:'D2R3a', tag:'memory', special:true, requires:'D2R3', unlocks:'D3R4',
+      text:'你說的「更早以前」——那是多久以前？',
+      eff:{Know_Pw:12, Grief_W:8, Know_Wp:5},
+      reply:'他活下來了。比我預期的活得久。',
+      obs:'他的語氣裡有一種說不清的東西。像是苦澀，又像是欣慰。' },
+    { id:'D2R3b', tag:'pressure', text:'政府昨天下了指令——今天要對你使用高壓電擊。你怎麼看？',
+      eff:{Kill_P:10, Grief_W:12, Trust_P:-5},
+      reply:'隨便。反正我已經被你們電過一次了。',
+      obs:'他把手腕上的舊痕往你面前轉了一下。' },
+    { id:'D2R3c', tag:'care', text:'如果今天是你活著的最後一天，你有什麼想說的？',
+      eff:{Trust_P:10, Grief_W:12},
+      reply:'……我想再見他一面。',
+      obs:'他說這句話的時候，聲音很輕。' },
+    { id:'D2R3d', tag:'neutral', text:'你的身體狀況紀錄顯示，你在監獄裡拒絕了大部分營養補充。為什麼？',
+      eff:{Grief_W:6, Trust_P:3},
+      reply:'沒必要。',
+      obs:'他的回答很短。' }
+  ]
+},
+'D2R4': {
+  ambient:'獄警送來了午餐。W 沒有動。他把餐盤推到一邊，用手指在桌面上畫了一個很小的圖案。',
+  options: [
+    { id:'D2R4a', tag:'memory', special:true, requires:'D2R4', unlocks:'D3R5',
+      text:'檔案上說你曾在城北地下鐵策劃爆炸。那個裝置最後被拆除了。是你拆的嗎？',
+      eff:{Know_Wp:8, Kill_P:5, GovSuspect:5, Know_Pw:10},
+      reply:'是我拆的。我裝上去，又親手拆下來。因為我後悔了。',
+      obs:'他的食指在膝上畫了個圈。' },
+    { id:'D2R4b', tag:'care', special:true, requires:'D2R4', unlocks:'D3R2',
+      text:'你昨天夢裡唸的詞是「小白」。你在叫誰？',
+      eff:{Know_Pw:15, Know_Wp:15, Trust_P:10, Grief_W:-8},
+      reply:'……那是一隻白鼠的名字。我給他取的。',
+      obs:'他看著你的方向，沒有眨眼。' },
+    { id:'D2R4c', tag:'neutral', text:'政府說你勾結境外勢力。這是真的嗎？',
+      eff:{Trust_P:-3, Kill_P:5, GovSuspect:3},
+      reply:'你們說是就是。反正你們的檔案從來沒問過我的版本。',
+      obs:'他把身體往後靠。' },
+    { id:'D2R4d', tag:'pressure', text:'你的同夥，或者說「潮汐」組織，到底有幾個人？',
+      eff:{Kill_P:5, Trust_P:-3},
+      reply:'三個人。都死了。',
+      obs:'他說這句話的時候，語氣很平。' }
+  ]
+},
+'D2R5': {
+  ambient:'下午兩點。審訊室的燈光閃了一下，又恢復正常。',
+  options: [
+    { id:'D2R5c', tag:'memory', special:true, requires:'D2R5', unlocks:'D3R3',
+      text:'你一直沒有說出口的那個人——現在在哪裡？',
+      eff:{Know_Pw:25, Know_Wp:20, Grief_W:-15, Trust_P:15},
+      reply:'……在看著我。',
+      obs:'他直直地看著你的眼睛。什麼都沒有再說。' },
+    { id:'D2R5a', tag:'pressure', text:'你對政府的研究資料轉移案，有什麼要交代的？',
+      eff:{Kill_P:8, Trust_P:-3},
+      reply:'那些資料本來就不該留在你們手上。',
+      obs:'他的語氣很平。' },
+    { id:'D2R5b', tag:'care', text:'你在牢裡絕食過一次。為什麼？',
+      eff:{Trust_P:8, Grief_W:10},
+      reply:'……那一天是那隻白鼠的生日。',
+      obs:'他低下頭。' },
+    { id:'D2R5d', tag:'neutral', text:'你的檔案裡有一張照片，實驗室。角落有一個模糊的身影。那是誰？',
+      eff:{Know_Pw:10, Grief_W:8},
+      reply:'……你們怎麼會有那張照片？',
+      obs:'他的聲音突然變得很低。' }
+  ]
+},
+'D2R6': {
+  ambient:'雨停了。審訊室裡安靜得能聽見 W 的呼吸。他的呼吸比昨天更慢。',
+  options: [
+    { id:'D2R6a', tag:'pressure', text:'你的組織，或者說你所謂的「同夥」，到底有幾個人？',
+      eff:{Kill_P:5, Trust_P:-3},
+      reply:'沒有同夥。一直都是我一個人。',
+      obs:'他的回答很短。' },
+    { id:'D2R6b', tag:'care', special:true, requires:'D2R6', unlocks:'D3R2',
+      text:'你為什麼選擇被捕？你明明可以逃。',
+      eff:{Trust_P:12, Know_Wp:10, Grief_W:-5},
+      reply:'因為我想見他。我已經三年沒見到他了。',
+      obs:'他說話的時候沒有看你，看著桌面。' },
+    { id:'D2R6c', tag:'memory', special:true, requires:'D2R6', unlocks:'D3R1',
+      text:'你在研究所的時候，是做什麼研究的？',
+      eff:{Know_Pw:15, Know_Wp:8, Grief_W:5},
+      reply:'我不是研究員。我是被研究的那一個。',
+      obs:'他把袖子往下拉了一下。' },
+    { id:'D2R6d', tag:'neutral', text:'你的檔案裡說你是「潮汐行動」的主謀。這個定性準確嗎？',
+      eff:{Know_Wp:3, Trust_P:2},
+      reply:'準確。你們寫得挺像一回事。',
+      obs:'他笑了。' }
+  ]
+},
+'D2R7': {
+  ambient:'傍晚的光線從通風口斜射進來。W 的側臉有一半在陰影裡。',
+  options: [
+    { id:'D2R7a', tag:'care', text:'你的身體一天比一天差。你想過停下來嗎？',
+      eff:{Trust_P:10, Grief_W:10, Know_Wp:5},
+      reply:'停下來就見不到他了。',
+      obs:'他的眼神有些散。' },
+    { id:'D2R7b', tag:'memory', special:true, requires:'D2R7', unlocks:'D3R5',
+      text:'檔案裡有一張照片。實驗室，一個小孩，還有一隻白鼠。你站在旁邊。',
+      eff:{Know_Pw:20, Grief_W:15, Know_Wp:8},
+      reply:'……那張照片還在？',
+      obs:'他的聲音第一次出現了裂痕。' },
+    { id:'D2R7c', tag:'pressure', text:'你的時間不多了。政府已經在討論處決程序。',
+      eff:{Kill_P:8, Grief_W:12},
+      reply:'那就快一點。',
+      obs:'他沒有別的反應。' },
+    { id:'D2R7d', tag:'neutral', text:'你的左肩傷口邊緣有燒灼的痕跡。那不是槍傷。那是什麼？',
+      eff:{Know_Pw:8, Know_Wp:5},
+      reply:'研究所的防衛裝置。他們不希望實驗體跑太遠。',
+      obs:'他說完之後，很輕地笑了一下。' }
+  ]
+},
+'D2R8': {
+  ambient:'今天的最後一個小時。審訊室的燈光開始變得昏黃。',
+  options: [
+    { id:'D2R8a', tag:'pressure', text:'你今天要被執行高壓電擊。有什麼遺言？',
+      eff:{Kill_P:10, Grief_W:15, Health_W:-15},
+      reply:'幫我告訴他——我不是故意忘的。',
+      obs:'他說完之後，把頭低了下去。' },
+    { id:'D2R8b', tag:'care', special:true, requires:'D2R8', unlocks:'D3R1',
+      text:'如果你能離開這裡，你最想去哪裡？',
+      eff:{Trust_P:12, Grief_W:-5, Know_Wp:8},
+      reply:'海邊。看一次日出。',
+      obs:'他抬起頭，看向走廊盡頭的方向。' },
+    { id:'D2R8c', tag:'memory', text:'你的左手袖口裡，是不是藏著什麼？',
+      eff:{Know_Pw:12, Know_Wp:10, Trust_P:5},
+      reply:'……沒有。',
+      obs:'他把左手往大腿底下藏。那個動作很快。' },
+    { id:'D2R8d', tag:'neutral', text:'你昨晚睡前的儀式——按壓左手腕三次——你已經持續四十七天了。是為了什麼？',
+      eff:{Know_Pw:8, Grief_W:8},
+      reply:'……確認自己還在。',
+      obs:'他沒有解釋「還在」是什麼意思。' }
+  ]
+},
+'D2R9': {
+  ambient:'外面開始下雨。雨聲很密，蓋過了審訊室的嗡鳴。',
+  options: [
+    { id:'D2R9a', tag:'care', text:'明天是最後一天了。你有沒有什麼想問我的？',
+      eff:{Trust_P:15, Know_Wp:12, Grief_W:-8},
+      reply:'……你叫什麼名字？',
+      obs:'他問得很輕。輕到幾乎聽不見。' },
+    { id:'D2R9b', tag:'memory', text:'如果我叫出一個名字，你會回答嗎？',
+      eff:{Know_Pw:20, Know_Wp:15, Grief_W:-10},
+      reply:'……那要看是什麼名字。',
+      obs:'他的呼吸變得很慢。' },
+    { id:'D2R9c', tag:'pressure', text:'政府給了我最後的授權。明天，我可以決定你的生死。',
+      eff:{Kill_P:15, Grief_W:15, Health_W:-5},
+      reply:'那是你的工作。',
+      obs:'他的語氣很平。但他放在膝上的手在抖。' },
+    { id:'D2R9d', tag:'neutral', text:'你的檔案我看完了。第八節是我自己加註的。你怎麼看？',
+      eff:{Trust_P:5, Know_Wp:5},
+      reply:'……你加註了什麼？',
+      obs:'他第一次對你的檔案感興趣。' }
+  ]
+},
+'D3R1': {
+  ambient:'最後一天。W 今天進來的時候，走路的步伐比前兩天更慢。',
+  options: [
+    { id:'D3R1a', tag:'care', special:true, requires:'D3R1', unlocks:'D3R7',
+      text:'昨晚我沒睡。我想了一整夜。',
+      eff:{Trust_P:12, Know_Pw:10, Know_Wp:8},
+      reply:'……想到什麼了嗎？',
+      obs:'他微微往前傾。他說話的時候，聲音比昨天更輕。' },
+    { id:'D3R1b', tag:'memory', special:true, requires:'D3R1', unlocks:'D3R7',
+      text:'你從第一天就開始觀察我。為什麼？',
+      eff:{Know_Pw:25, Know_Wp:20, Trust_P:10, Grief_W:-10},
+      reply:'……我一直都認得。',
+      obs:'他看著你，很久。' },
+    { id:'D3R1c', tag:'pressure', text:'局長今天早上給了我一把槍。你知道那是什麼意思。',
+      eff:{Kill_P:15, Grief_W:10, Trust_P:-5},
+      reply:'知道。',
+      obs:'他把手放回桌面。' },
+    { id:'D3R1d', tag:'neutral', text:'你今天進來的時候，走路很慢。發生什麼事了？',
+      eff:{Grief_W:5, Trust_P:3},
+      reply:'沒什麼。腿有點軟。',
+      obs:'他的額頭有一層薄汗。' }
+  ]
+},
+'D3R2': {
+  ambient:'今天的天氣很陰。審訊室的燈光調到了最亮，但還是顯得昏黃。',
+  options: [
+    { id:'D3R2a', tag:'care', special:true, requires:'D3R2', unlocks:'D3R7',
+      text:'你今天看起來比前兩天更累。發生什麼事了？',
+      eff:{Trust_P:10, Grief_W:8, Health_W:-5},
+      reply:'……昨晚沒睡好。做了一個夢。',
+      obs:'他的眼下有很深的陰影。' },
+    { id:'D3R2b', tag:'memory', special:true, requires:'D3R2', unlocks:'D3R7',
+      text:'你說的「他」——是研究所裡的實驗體嗎？',
+      eff:{Know_Pw:25, Know_Wp:20, Trust_P:12, Grief_W:-8},
+      reply:'……你記得了？',
+      obs:'他猛地抬起頭，直視你的眼睛。' },
+    { id:'D3R2c', tag:'pressure', text:'你的同夥今天會來救你嗎？',
+      eff:{Kill_P:8, Trust_P:-3},
+      reply:'我沒有同夥。我只有一個人。',
+      obs:'他的聲音很平。' },
+    { id:'D3R2d', tag:'neutral', text:'你的左手袖口，今天比昨天更緊了。裡面有什麼？',
+      eff:{Know_Pw:10, Know_Wp:8},
+      reply:'……沒什麼。',
+      obs:'他把左手往桌下縮了一點。' }
+  ]
+},
+'D3R3': {
+  ambient:'上午十一點。審訊室的通風系統突然停了幾秒鐘，然後又恢復。',
+  options: [
+    { id:'D3R3c', tag:'memory', special:true, requires:'D3R3', unlocks:'D3R6',
+      text:'如果我叫出那個名字——你會怎麼做？',
+      eff:{Know_Pw:25, Know_Wp:25, Trust_P:20, Grief_W:-15},
+      reply:'……我會敲三下桌子。那就是暗號。',
+      obs:'他的眼睛亮了。' },
+    { id:'D3R3a', tag:'pressure', text:'今天上午十一點，毒氣系統會自動啟動。你有三分鐘時間決定要不要配合。',
+      eff:{Kill_P:12, Grief_W:15, Health_W:-5},
+      reply:'我不需要三分鐘。',
+      obs:'他閉上眼睛。' },
+    { id:'D3R3b', tag:'care', text:'如果今天真的是最後一天——你有什麼想讓我做的？',
+      eff:{Trust_P:15, Know_Wp:12, Grief_W:-8},
+      reply:'……閉上眼睛，聽我說。',
+      obs:'他看著你，很慢地眨了一下眼。' },
+    { id:'D3R3d', tag:'neutral', text:'通風系統剛才停了。審訊室外面可能有什麼動靜。',
+      eff:{Know_Wp:5, Trust_P:5},
+      reply:'暴風雨。監控線路會斷。',
+      obs:'他的眼睛在看你，但不是在看你。' }
+  ]
+},
+'D3R4': {
+  ambient:'下午一點。窗外開始下雨。審訊室的溫度比早上更低。',
+  options: [
+    { id:'D3R4a', tag:'memory', special:true, requires:'D3R4', unlocks:'D3R8',
+      text:'三年前你從海裡撈起來的人——是我。對不對？',
+      eff:{Know_Pw:30, Know_Wp:25, Trust_P:15, Grief_W:-12},
+      reply:'……你想起多少了？',
+      obs:'他的手指在桌上抖了一下。' },
+    { id:'D3R4b', tag:'pressure', text:'這是最後的機會。你交代一切，我可以幫你申請減刑。',
+      eff:{Kill_P:10, Trust_P:-8, Grief_W:12},
+      reply:'我不需要減刑。',
+      obs:'他的語氣很硬。' },
+    { id:'D3R4c', tag:'care', text:'我昨晚在紙上寫了一個名字。但我不知道那是不是我的名字。',
+      eff:{Know_Pw:20, Know_Wp:15, Trust_P:10, Grief_W:-10},
+      reply:'……那是你的名字。我取的。',
+      obs:'他說這句話的時候，眼眶紅了。' },
+    { id:'D3R4d', tag:'neutral', text:'你的左手袖口已經鬆開了一點。裡面藏著什麼？',
+      eff:{Know_Pw:12, Know_Wp:10},
+      reply:'……沒有。',
+      obs:'他把左手往袖子裡又縮了一點。' }
+  ]
+},
+'D3R5': {
+  ambient:'下午兩點。審訊室的燈光閃了兩次。W 今天看起來比昨天更瘦。',
+  options: [
+    { id:'D3R5a', tag:'memory', special:true, requires:'D3R5', unlocks:'D3R7',
+      text:'你的檔案裡有一個欄位被刪除了。那是關於什麼的？',
+      eff:{Know_Pw:15, Know_Wp:8},
+      reply:'有。你會忘記自己是誰。',
+      obs:'他沒有說的是「你」，還是「我」。' },
+    { id:'D3R5b', tag:'care', special:true, requires:'D3R5', unlocks:'D3R7',
+      text:'你今天有沒有什麼話想對我說？當作是……最後一句。',
+      eff:{Trust_P:18, Know_Wp:15, Grief_W:-10},
+      reply:'……對不起。',
+      obs:'他沒有解釋為什麼道歉。' },
+    { id:'D3R5c', tag:'pressure', text:'如果我不救你，你會被處決。你想過嗎？',
+      eff:{Kill_P:15, Grief_W:18, Trust_P:-5},
+      reply:'想過。我準備好了。',
+      obs:'他的語氣很平。' },
+    { id:'D3R5d', tag:'neutral', text:'你的左手腕內側，今天又多了一道新的紅痕。那是什麼時候的？',
+      eff:{Know_Pw:8, Grief_W:8},
+      reply:'……昨晚。',
+      obs:'他把左手縮回去。' }
+  ]
+},
+'D3R6': {
+  ambient:'下午三點。這是毒氣系統的預設啟動時間。審訊室裡很安靜。',
+  options: [
+    { id:'D3R6c', tag:'memory', special:true, requires:'D3R6', unlocks:'D3R9',
+      text:'外面的人要怎麼確認目標已經被帶出？',
+      eff:{Know_Pw:20, Know_Wp:25, Trust_P:20, Grief_W:-10},
+      reply:'當審訊室的燈光熄滅，只要叫出那個名字，槍聲就會停下。',
+      obs:'他壓低聲音。麥克風的底噪蓋過了幾個音節。' },
+    { id:'D3R6a', tag:'pressure', text:'處決同意書。我只要簽字，五分鐘內就會執行。',
+      eff:{Kill_P:20, Grief_W:25},
+      reply:'簽吧。死在你手裡，總好過死在那些研究員的解剖台上。',
+      obs:'他閉上眼。' },
+    { id:'D3R6b', tag:'care', text:'我剛看到一份文件。上面寫著「清理完畢」。你知道那是什麼意思嗎？',
+      eff:{Trust_P:12, Grief_W:10, GovSuspect:5},
+      reply:'……我知道。',
+      obs:'他的聲音很輕。' },
+    { id:'D3R6d', tag:'neutral', text:'毒氣系統會在下午三點自動啟動。還有五分鐘。',
+      eff:{GovSuspect:5, Grief_W:8},
+      reply:'那不是毒氣。是氰化物。',
+      obs:'他說得很平。' }
+  ]
+},
+'D3R7': {
+  ambient:'下午四點。審訊室的燈開始變暗。W 的身影在燈光下顯得很單薄。',
+  options: [
+    { id:'D3R7a', tag:'memory', special:true, requires:'D3R7', unlocks:'D3R9',
+      text:'這座審訊室，其實也是個籠子。對吧？',
+      eff:{Know_Pw:15, Trust_P:12, Know_Wp:8},
+      reply:'只要我們一起走出去，籠子就會碎掉。',
+      obs:'他站了起來。鐵椅向後滑了半公尺。' },
+    { id:'D3R7b', tag:'pressure', text:'你的時間到了。你還有什麼遺言？',
+      eff:{Kill_P:15, Grief_W:15},
+      reply:'我的遺言，已經寫在你的名字裡了。',
+      obs:'他先是看著鏡頭，然後看著你。看了很久。' },
+    { id:'D3R7c', tag:'care', special:true, requires:'D3R7', unlocks:'D3R9',
+      text:'如果我簽了那份同意書——你會恨我嗎？',
+      eff:{Trust_P:10, Grief_W:12, Kill_P:5},
+      reply:'不會。我從來沒有恨過你。',
+      obs:'他笑了。這是三天以來第一次真正的笑。' },
+    { id:'D3R7d', tag:'neutral', text:'你的檔案第八節，我自己加註了七個疑點。其中有兩個跟你左手腕的舊痕有關。',
+      eff:{Know_Pw:8, Know_Wp:8, Trust_P:5},
+      reply:'……你看得很仔細。',
+      obs:'他第一次對你露出另一種表情。' }
+  ]
+},
+'D3R8': {
+  ambient:'下午五點。審訊室的燈光開始每隔幾分鐘閃一次。W 的嘴唇已經完全沒有血色。',
+  options: [
+    { id:'D3R8a', tag:'memory', special:true, requires:'D3R8', unlocks:'D3R9',
+      text:'你的左手袖口裡，是不是有一張紙條？',
+      eff:{Know_Pw:20, Know_Wp:20, Trust_P:10, Grief_W:-8},
+      reply:'……你怎麼知道？',
+      obs:'他把左手往後縮了一下。' },
+    { id:'D3R8b', tag:'pressure', text:'政府已經批准了毒氣方案。今天是最後一天。',
+      eff:{Kill_P:15, Grief_W:15, GovSuspect:5},
+      reply:'我知道。',
+      obs:'他沒有別的反應。' },
+    { id:'D3R8c', tag:'care', special:true, requires:'D3R8',
+      text:'如果有一條路可以讓我們都活下來，你會走嗎？',
+      eff:{Trust_P:15, Know_Wp:12, Grief_W:-10},
+      reply:'……我已經走過一次了。這次換你走。',
+      obs:'他看著你，眼神很穩。' },
+    { id:'D3R8d', tag:'neutral', text:'你的左手袖口已經鬆開很久了。你一直在裡面動。',
+      eff:{Know_Pw:15, Know_Wp:12, Trust_P:8},
+      reply:'……你看到了？',
+      obs:'他的呼吸瞬間亂了。' }
+  ]
+},
+'D3R9': {
+  ambient:'下午六點。審訊室的燈開始變暗。W 的身影在昏暗裡顯得很模糊。',
+  options: [
+    { id:'D3R9c', tag:'memory', special:true, requires:'D3R9',
+      text:'（將眼神移向他扣緊的左手袖口）……你握著的那張紙條，是給我的，還是給外面的那些人？',
+      eff:{Trust_P:15, Know_Wp:15, Know_Pw:10, Grief_W:-10},
+      reply:'（他的眼睛驟然亮起。他重重地敲擊了桌面三下——沉悶、規律、像是某種倒數。）',
+      obs:'監控室的燈，閃了一下。' },
+    { id:'D3R9a', tag:'care', text:'審訊結束了。你有什麼話想對我說？',
+      eff:{Trust_P:15, Grief_W:-5},
+      reply:'……你叫什麼名字？',
+      obs:'他又問了一次。這次你必須回答。' },
+    { id:'D3R9b', tag:'memory', text:'我在檔案上看到一個名字。那個名字讓我頭很痛。',
+      eff:{Know_Pw:20, Know_Wp:15, Trust_P:10, Grief_W:-10},
+      reply:'……那是我取的。',
+      obs:'他笑了。' },
+    { id:'D3R9d', tag:'neutral', text:'毒氣系統已經啟動。你的時間到了。',
+      eff:{GovSuspect:5, Grief_W:10},
+      reply:'我知道。',
+      obs:'他閉上眼睛。' }
+  ]
+}
+};
+
+const TORTURES = {
+  T05:{ id:'T05', name:'高 壓 電 擊',
+    desc:'電極片固定於頸動脈與手腕。程序代號「反覆洗滌」。',
+    eff:{Health_W:-18, Kill_P:12, Grief_W:12, pain:2, GovSuspect:5},
+    reply:'……啊、呃——！你的手法……比研究所的自動注射器……還要生疏……',
+    obs:'鐵椅在地面上刮出三道白痕。他始終沒有別開視線。',
+    obs2:'電極片拔下來的時候，他的皮膚上留下了一個環形的焦痕。',
+    deathChance:0.05 },
+  T11:{ id:'T11', name:'注 射 吐 真 劑',
+    desc:'高濃度神經抑制劑。強迫中樞神經釋放短期記憶。',
+    eff:{Health_W:-12, Kill_P:8, Trust_P:-8, fog:1, GovSuspect:5},
+    reply:'頻率……就是你被研究所編號的那天……你連這個都忘了嗎……',
+    obs:'他咬破了嘴唇。血沿著下巴滴在鐵桌上。',
+    obs2:'他說到一半的時候，眼神短暫地失焦了。',
+    deathChance:0.03 },
+  T16:{ id:'T16', name:'剝 奪 睡 眠',
+    desc:'連續刺激腦波維持清醒。標準程序為 48 小時。',
+    eff:{Health_W:-15, Grief_W:18, pain:1, GovSuspect:5},
+    reply:'只要……只要你能清醒過來……我多久都能撐……',
+    obs:'他的眼神渙散，卻始終沒有離開你的方向。',
+    obs2:'他的眼皮在跳。他撐著不讓自己閉上。',
+    deathChance:0.04 },
+  T23:{ id:'T23', name:'記 憶 毒 素',
+    desc:'實驗階段神經毒劑。強制回溯深層記憶，不可逆損傷。',
+    eff:{Health_W:-35, Kill_P:25, pain:3, GovSuspect:10},
+    reply:'（他口吐鮮血，身體猛地弓起，然後整個人癱軟下去。他不再回應任何對話。）',
+    obs:'鐵桌上的血窪正在慢慢擴大。',
+    obs2:'他的手指還在輕微地抽動。',
+    deathChance:0.25 }
+};
+
+const histEl = $('history');
+const wrapEl = $('histwrap');
+function scrollBottom(){ wrapEl.scrollTop = wrapEl.scrollHeight; }
+function type(el, text, speed){
+  return new Promise(resolve => {
+    typingSkip = false;
+    let i = 0;
+    el.textContent = '';
+    el.classList.add('cursor');
+    function tick(){
+      if(typingSkip || i >= text.length){
+        el.textContent = text;
+        el.classList.remove('cursor');
+        typingSkip = false;
+        scrollBottom();
+        resolve();
+        return;
+      }
+      el.textContent += text[i++];
+      if(i % 3 === 0) scrollBottom();
+      setTimeout(tick, speed);
+    }
+    tick();
+  });
+}
+async function say(cls, text, speed){
+  const d = document.createElement('div');
+  d.className = 'line ' + cls;
+  histEl.appendChild(d);
+  await type(d, text, speed || 22);
+  scrollBottom();
+  return d;
+}
+function instant(cls, text){
+  const d = document.createElement('div');
+  d.className = 'line ' + cls;
+  d.textContent = text;
+  histEl.appendChild(d);
+  scrollBottom();
+  return d;
+}
+async function observe(text, cls){
+  const box = $('observe');
+  const d = document.createElement('div');
+  d.className = 'obsline ' + (cls || '');
+  box.appendChild(d);
+  await type(d, text, 26);
+  box.scrollTop = box.scrollHeight;
+  while(box.children.length > 16) box.removeChild(box.firstChild);
+}
+
+function updateHUD(){
+  const bpm = Math.round(62 + state.Kill_P * 0.75 + (state.Health_W < 40 ? 9 : 0) + (state.Grief_W > 60 ? 5 : 0));
+  $('bpm').textContent = String(clamp(bpm, 55, 168)).padStart(3,'0');
+  const brain = clamp(Math.round(state.Know_Pw), 0, 100);
+  $('brain').textContent = String(brain).padStart(2,'0');
+  const bb = $('brainBar');
+  bb.querySelector('i').style.width = brain + '%';
+  bb.classList.toggle('hot', brain > 65);
+  const w = $('wave');
+  if(state.GovSuspect >= 40){ w.textContent = '雜訊異常'; w.className = 'bad'; }
+  else if(state.GovSuspect >= 18){ w.textContent = '輕微干擾'; w.className = 'warn'; }
+  else { w.textContent = '正常'; w.className = 'ok'; }
+  updateTortureBtn();
+}
+function setClock(day, hhmm){ $('clock').textContent = 'DAY ' + day + ' — ' + hhmm; }
+function setRoundLabel(r){ $('roundLabel').textContent = r + ' / 9'; }
+
+function updateTortureBtn(){
+  const btn = $('tortureBtn');
+  const avail = Object.keys(TORTURES).filter(k => state.torturesAvailable[k] && !state.torturesUsed[k]);
+  if(state.ended || state.dead || state.Health_W <= 0 || avail.length === 0){
+    btn.disabled = true; btn.textContent = '// 特殊手段 — 未發放';
+  } else {
+    btn.disabled = false; btn.textContent = '// 特殊手段 — 可使用 (' + avail.length + ')';
+  }
+}
+
+let resolveQuestion = null;
+let resolveChoice = null;
+
+function renderQuestions(list){
+  const dock = $('docklist');
+  dock.innerHTML = '';
+  list.forEach(q => {
+    const b = document.createElement('button');
+    b.className = 'qbtn';
+    if(q.tag === 'torture') b.classList.add('dangerous');
+    b.textContent = q.text;
+    b.onclick = () => {
+      sfxClick();
+      const r = resolveQuestion;
+      resolveQuestion = null;
+      dock.innerHTML = '';
+      if(r) r(q.id);
+    };
+    dock.appendChild(b);
+  });
+}
+function waitForQuestion(list){
+  return new Promise(res => { resolveQuestion = res; renderQuestions(list); });
+}
+function renderChoices(options, label){
+  const dock = $('docklist');
+  dock.innerHTML = '';
+  const lb = document.createElement('div');
+  lb.className = 'docklabel';
+  lb.textContent = '// ' + (label || '需要你做出決定');
+  dock.appendChild(lb);
+  options.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'qbtn choice' + (o.danger ? ' dangerous' : '');
+    b.textContent = o.t;
+    b.onclick = () => {
+      sfxClick();
+      const r = resolveChoice;
+      resolveChoice = null;
+      dock.innerHTML = '';
+      if(r) r(o.v);
+    };
+    dock.appendChild(b);
+  });
+  return new Promise(res => { resolveChoice = res; });
+}
+function clearDock(msg){
+  const dock = $('docklist');
+  dock.innerHTML = '';
+  if(msg){
+    const lb = document.createElement('div');
+    lb.className = 'docklabel';
+    lb.textContent = msg;
+    dock.appendChild(lb);
+  }
+}
+
+async function applyEffects(eff, tag){
+  const e = Object.assign({}, eff || {});
+  const isWarm = (tag === 'memory' || tag === 'care');
+  if(isWarm){
+    state.streak++;
+    if(state.streak >= 3 && !state.streakBonus){
+      state.streakBonus = true;
+      if(e.Know_Pw) e.Know_Pw = Math.round(e.Know_Pw * 1.5);
+      e.Grief_W = (e.Grief_W || 0) - 8;
+    }
+  } else {
+    state.streak = 0; state.streakBonus = false;
+  }
+  if(state.lastTag === 'pressure' && tag === 'care'){
+    e.Grief_W = (e.Grief_W || 0) + 10;
+  }
+  if(state.Health_W < 40 && tag === 'care' && e.Trust_P){
+    e.Trust_P = e.Trust_P * 2;
+  }
+  for(const k in e){ state[k] = (state[k] || 0) + e[k]; }
+  state.Trust_P  = clamp(state.Trust_P, 0, 100);
+  state.Kill_P   = clamp(state.Kill_P, 0, 100);
+  state.Know_Pw  = clamp(state.Know_Pw, 0, 100);
+  state.Know_Wp  = clamp(state.Know_Wp, 0, 100);
+  state.Grief_W  = clamp(state.Grief_W, 0, 100);
+  state.Health_W = clamp(state.Health_W, 0, 100);
+  state.GovSuspect = clamp(state.GovSuspect, 0, 100);
+  state.pain = clamp((state.pain||0), 0, 20);
+  state.fog = clamp((state.fog||0), 0, 10);
+  state.lastTag = tag;
+  updateHUD();
+  if(state.Health_W <= 0){ await triggerDeath(); }
+}
+
+async function triggerDeath(){
+  state.dead = true; state.ended = true;
+  $('tortureBtn').disabled = true;
+  clearDock('[ 審訊程序終止 ]');
+  instant('head', '── 主線事件：生理訊號終止 ──');
+  await say('sys', '[ 系統 ] W-0731 生命體徵歸零。');
+  await sleep(500);
+  await say('narr', '鐵椅發出最後一次聲響。他的頭無力地垂下去。');
+  await say('narr', '監控室的紅燈熄滅了。');
+  await observe('他的血從嘴角流出來，在鐵桌上形成一個很小的水窪。', 'red');
+  await sleep(800);
+  let key;
+  if(state.Know_Pw >= 60) key = '遺憾';
+  else if(state.Kill_P >= 60) key = '憎恨';
+  else key = '遺憾';
+  unlockEnding(key);
+  autoSave();
+  await playEnding(key);
+}
+
+async function glitchFlash(){
+  const crt = $('crt');
+  const tear = document.createElement('div');
+  tear.className = 'tear';
+  crt.appendChild(tear);
+  crt.classList.add('glitch');
+  sfxSubmerge();
+  await sleep(210);
+  crt.classList.remove('glitch');
+  setTimeout(() => tear.remove(), 200);
+}
+
+async function askQuestion(qid){
+  let q = null;
+  for(const rk in ROUNDS){
+    for(const opt of ROUNDS[rk].options){
+      if(opt.id === qid){ q = opt; break; }
+    }
+    if(q) break;
+  }
+  if(!q) return;
+  state.used[qid] = true;
+  state.askedCount++;
+  clearDock('');
+  await say('player', '▶ ' + q.text);
+  await say('w', q.reply);
+  await applyEffects(q.eff, q.tag);
+  if(q.obs) await observe(q.obs, q.special ? 'amber' : '');
+  if(q.obs2) await observe(q.obs2, q.special ? 'amber' : '');
+  if(q.unlocks){ state.flags[q.unlocks] = true; }
+  if(state.dead) return;
+}
+
+/* ============================================================
+   修復版 runRound — 所有已解鎖 special 都會顯示
+============================================================ */
+async function runRound(day, round){
+  if(state.dead || state.ended) return;
+
+  setRoundLabel(round);
+  const hour = 9 + Math.floor((round - 1) * 1.2);
+  const min = ((round - 1) * 7) % 60;
+  setClock(day, String(hour).padStart(2,'0') + ':' + String(min).padStart(2,'0'));
+
+  const rk = 'D' + day + 'R' + round;
+  const roundData = ROUNDS[rk];
+  if(!roundData){ return; }
+
+  if(roundData.ambient){
+    if(round === 1 || round === 5 || round === 9 || Math.random() < 0.35){
+      await say('ambient', '　' + roundData.ambient);
+    }
+  }
+
+  const allUnused = roundData.options.filter(o => !state.used[o.id]);
+
+  /* 找出所有已解鎖的特殊選項（requires 已滿足） */
+  const unlockedSpecials = allUnused.filter(o =>
+    o.special && o.requires && state.flags[o.requires]
+  );
+  /* 其他可用選項：普通選項 + 沒有 requires 的 special + 未解鎖的 special 作為備用 */
+  const others = allUnused.filter(o => !unlockedSpecials.includes(o));
+
+  let options = [];
+  /* 先推入所有已解鎖特殊選項 */
+  for(const sp of unlockedSpecials){
+    if(options.length >= 3) break;
+    options.push(sp);
+  }
+  /* 再用其他選項補滿至 3 個 */
+  for(const n of others){
+    if(options.length >= 3) break;
+    if(!options.includes(n)) options.push(n);
+  }
+
+  if(options.length === 0) return;
+
+  const avail = options.slice(0, 3);
+  const picked = await waitForQuestion(avail);
+  await askQuestion(picked);
+
+  if(state.dead) return;
+  autoSave();
+}
+
+function openTorturePanel(){
+  const list = $('tortureList');
+  list.innerHTML = '';
+  Object.keys(TORTURES).forEach(k => {
+    const t = TORTURES[k];
+    const avail = state.torturesAvailable[k];
+    const used = state.torturesUsed[k];
+    const card = document.createElement('div');
+    card.className = 'torture-card' + ((!avail || used) ? ' used' : '');
+    card.innerHTML = '<h3>' + (used ? '已使用 — ' : '') + t.name + '</h3><p>' + (avail ? t.desc : '尚未授權。') + '</p>';
+    if(avail && !used && !state.dead && !state.ended){
+      card.onclick = () => { sfxClick(); useTorture(k); };
+    }
+    list.appendChild(card);
+  });
+  $('tortureOverlay').classList.add('on');
+}
+function closeTorturePanel(){ $('tortureOverlay').classList.remove('on'); }
+
+async function useTorture(k){
+  const t = TORTURES[k];
+  if(state.torturesUsed[k] || !state.torturesAvailable[k]) return;
+  state.torturesUsed[k] = true;
+  closeTorturePanel();
+  instant('head', '── 特殊手段：' + t.name.replace(/\s/g,'') + ' ──');
+  await say('sys', '[ 政府授權執行 ] 編號 W-0731 — 特殊手段已啟動。');
+  await sleep(280);
+  await glitchFlash();
+  await say('w', t.reply);
+  await applyEffects(t.eff, 'torture');
+  await observe(t.obs, 'red');
+  if(t.obs2) await observe(t.obs2, 'red');
+  if(!state.dead && Math.random() < t.deathChance){
+    await sleep(400);
+    instant('dead', '── W 的心跳停止 ──');
+    await say('narr', '他最後看了你一眼，然後閉上眼睛。');
+    state.Health_W = 0;
+    await triggerDeath();
+  }
+}
+
+async function morningEvent(day){
+  if(day === 1){
+    instant('title', 'D A Y   1');
+    await say('sys', '[ 系統啟動 ] 政府地下審訊中心 — B3 層 — 第 7 審訊室');
+    await say('narr', '你推開門。房間裡只有一張鐵桌、兩把椅子，和一面單向鏡。');
+    await say('narr', '空氣裡有一股很淡的金屬味。像是血乾掉之後留下的。');
+    await say('narr', '對面的人已經坐好了。雙手銬在桌面的鐵環上。');
+    await say('narr', '他抬起頭。');
+    await say('w', '早安，審訊官。');
+    await say('w', '你看起來……比我想像的年輕。');
+    await observe('他的視線在你的臉上停留。很久。久到有點失禮。');
+    await observe('他的眼睛是深褐色的。左眼下方有一道很淺的疤。', 'body');
+  }
+  if(day === 2){
+    instant('title', 'D A Y   2');
+    await say('narr', '清晨。你在洗手間用冷水洗臉。');
+    await sleep(250); await glitchFlash();
+    await say('narr', '你抬頭看鏡子。鏡子裡的倒影，有一瞬間不是你的臉。');
+    await say('mem', '那是一具白鼠的骨骼。胸腔在呼吸。');
+    await sleep(250);
+    await say('narr', '你扶住洗手台。太陽穴像被鑽開一樣疼。');
+    await observe('（鏡面已經恢復正常。但你的手還在抖。）', 'red');
+    await say('sys', '[ 警告 ] 您的生理數據出現異常波動。建議服用抑制劑。');
+    await sleep(400);
+    await say('self', '　你昨晚沒有吃藥。你把它沖進洗手台了。');
+  }
+  if(day === 3){
+    instant('title', 'D A Y   3');
+    await say('narr', '你走進指揮室。局長站在窗前，背對著你。');
+    await say('w', '高層已經判定 0731 失去情報價值。');
+    await say('w', '今天是最後一天。問完之後，毒氣會自動注入。');
+    await say('narr', '他轉過身，把一份文件推到你面前。上面蓋著紅色的執行章。');
+    await observe('你注意到，執行時間欄是空白的。還沒填。', 'red');
+    await sleep(300);
+    await say('self', '　你今天早上沒有吃抑制劑。你想保持清醒。');
+  }
+  autoSave();
+}
+
+async function eveningEvent(day){
+  if(day === 1){
+    instant('head', '── 主線事件：監控室的冷眼 ──');
+    await say('narr', '局長傳喚你。他的手邊放著一把解鎖授權的配槍。');
+    await say('w', '你的提問太軟了。');
+    await say('w', '這把槍留在這裡。你知道該怎麼用。');
+    await say('narr', '他沒有等你回答就走了。槍靜靜躺在桌上。');
+    const c = await renderChoices([
+      { t: '把槍收進腰間。', v: 'take', danger: true },
+      { t: '把槍留在桌上。', v: 'leave' }
+    ], '你的選擇');
+    if(c === 'take'){
+      state.Kill_P = clamp(state.Kill_P + 8, 0, 100);
+      state.GovSuspect = clamp(state.GovSuspect - 5, 0, 100);
+      await say('narr', '你把它別在腰後。金屬的重量壓著你的脊椎。');
+    } else {
+      state.Trust_P = clamp(state.Trust_P + 5, 0, 100);
+      state.GovSuspect = clamp(state.GovSuspect + 8, 0, 100);
+      await say('narr', '你轉身離開。槍留在桌上，像一個沒有被接受的邀請。');
+    }
+    updateHUD(); autoSave();
+  }
+  if(day === 2){
+    instant('head', '── 主線事件：海浪聲的夢 ──');
+    await say('narr', '你睡著了。');
+    await sleep(250); await glitchFlash();
+    await say('mem', '夢裡有槍聲。有海浪。有人在叫你。');
+    await say('mem', '你聞到海鹽的味道。很鹹，很冷。');
+    await sleep(250);
+    await say('narr', '你醒過來的時候，發現自己站在書桌前。');
+    await say('narr', '桌上有一張紙，上面寫著兩個字——');
+    await say('mem', '你開局輸入的名字：' + state.name);
+    await observe('筆跡不是你的。或者說，不像是現在的你。', 'amber');
+  }
+}
+
+async function nightEcho(day){
+  const fadeEl = $('fade');
+  const bt = $('blacktext');
+  fadeEl.style.transition = 'opacity 3s linear';
+  fadeEl.style.opacity = '1';
+  await sleep(3100);
+  const s = state;
+  let lines = [];
+  if(s.Kill_P > 60) lines = ['……你聽見自己在喘。','夢裡的你在按一個按鈕。按鈕底下有人在喊你的名字。','你沒有停手。','你醒不過來。'];
+  else if(s.Trust_P > 55) lines = ['……有人在你旁邊輕輕呼吸。','你記得那個頻率。很久以前，你發燒的時候，就是這個頻率陪了你一整夜。','你沒有睜開眼睛。因為睜開就沒有了。'];
+  else if(s.Know_Pw > 45) lines = ['……海水漫過你的腳踝。','有人牽著你的手在跑。你跑不動，他就停下來等你。','他一次都沒有回頭催你。','你想看清楚他的臉。可是每次一轉頭，他就模糊了。'];
+  else lines = ['……走廊的燈管在閃。','你數著自己的心跳。一下，兩下，三下。','數到第幾下的時候，你睡著了。','你夢見一個白色的房間。你在裡面。'];
+  if(s.Grief_W > 70) lines.push('', '隔壁房間有人在哭。很壓抑，幾乎聽不見。', '你分不清那是誰。');
+  if(s.fog > 3) lines.push('', '你的太陽穴在跳。一下，一下。', '你想不起自己今天問了什麼。');
+  bt.classList.add('on');
+  for(const l of lines){ bt.textContent = l; await sleep(1600); }
+  await sleep(600);
+  bt.classList.remove('on');
+  await sleep(1200);
+  fadeEl.style.transition = 'opacity 1.8s ease-out';
+  fadeEl.style.opacity = '0';
+  await sleep(1900);
+  bt.textContent = '';
+}
+
+function issueDailyTortures(day){
+  if(day === 1){ state.torturesAvailable['T05'] = true; }
+  else if(day === 2){ state.torturesAvailable['T11'] = true; state.torturesAvailable['T16'] = true; }
+  else if(day === 3){ state.torturesAvailable['T23'] = true; }
+  updateTortureBtn();
+}
+
+/* ============================================================
+   結局判定 — 修正版
+   - 深淵門檻 55 → 45
+   - 虛妄門檻 85 → 75
+   - 虛妄優先於憎恨（當 Grief 極高時）
+   - 白鴿檢查 flags['D3R8'] 而非 flags['D3R8c']
+============================================================ */
+function determineEnding(){
+  const s = state;
+
+  if(s.dead || s.Health_W <= 0){
+    if(s.Know_Pw >= 60) return '遺憾';
+    return '憎恨';
+  }
+
+  /* 坦途：完整特殊鏈 + 全部達標 */
+  if(s.flags['D3R9'] && s.used['D3R9c'] && s.Know_Pw >= 70 && s.Trust_P >= 70 && s.Know_Wp >= 70 && s.Kill_P < 40){
+    return '坦途';
+  }
+
+  /* 虛妄優先於憎恨（W 因絕望自盡，而非玩家殺死他） */
+  if(s.Grief_W >= 75 && s.Know_Pw < 50){
+    return '虛妄';
+  }
+
+  /* 憎恨：殺意極高 */
+  if(s.Kill_P >= 90) return '憎恨';
+  if(s.used['D3R6a'] && s.Know_Pw < 60) return '憎恨';
+
+  /* 深淵：政府疑心達門檻 */
+  if(s.GovSuspect >= 45) return '深淵';
+
+  /* 白鴿：D3R8c 自我犧牲（檢查 D3R8 flag，由 D3R4a 設定） */
+  if(s.flags['D3R8'] && s.used['D3R8c'] && s.Know_Pw >= 60 && s.Trust_P >= 60){
+    return '白鴿';
+  }
+
+  /* 悲焰：高 Know + 高 Trust + 重傷 */
+  if(s.Know_Pw >= 60 && s.Trust_P >= 60 && s.Health_W > 0 && s.Health_W <= 30){
+    return '悲焰';
+  }
+
+  /* 遺憾：記憶復甦但 W 已死 */
+  if(s.Know_Pw >= 60 && s.Health_W <= 0) return '遺憾';
+
+  return '未曾';
+}
+
+const ENDINGS = {
+坦途: { title:'坦 途', sub:'TRUE ENDING', summary:'記憶完全復甦，與 W 一同逃離審訊室。',
+  story: [
+    '雨是從凌晨三點開始下的。起初只是零星幾滴，砸在審訊室通風口的鐵板上，發出一種沉悶的、像心跳一樣的聲音。',
+    '',
+    '我當時正坐在審訊室的角落。桌子上攤著三天累積下來的紀錄——二十七個問題、二十七段回答、二十七個我當時沒有聽懂的暗號。',
+    '',
+    '鐵門在液壓桿的呻吟裡裂開第一道縫的時候，W 已經站了起來。',
+    '',
+    '他手腕上的鐵鏈早就鬆了——那是我在第二天的深夜用打磨石一點一點磨斷的。我記得那個晚上，整個地下三層只剩走廊盡頭的一盞燈還亮著。',
+    '',
+    'W 用肩膀撞開我。我撞在牆上，肋骨撞得很疼，鐵鏈從他腕上滑落，砸在地上發出一聲鈍響。',
+    '他說：「跑。」',
+    '',
+    '我沒有跑。我看著他。在那零點幾秒裡，我想起了所有的事。',
+    '',
+    '想起白色手術燈。想起那支針。想起有人從解剖台上把我抱下來，那個人的手在抖，但抱得很緊。',
+    '想起他說：「別怕，我在。」',
+    '',
+    '「一起。」我說。',
+    '',
+    '我們衝進雨裡。海風是鹹的，冷得像針，扎進氣管裡。三點鐘方向，探照燈掃過海面——然後熄了。',
+    '船的引擎在黑暗裡低吼。',
+    '',
+    '我回頭看了一眼那座灰白色的建築。它在雨裡沉默著，像一口被遺棄的籠子。',
+    '',
+    'W 的手抓住我的手腕。他的手很涼，但很穩。',
+    '「小白鼠，」他說，「回家了。」',
+    '',
+    '船開出去很遠的時候，天邊開始發白。',
+    '我靠在他肩上。他的肩膀很瘦，鎖骨硌得我臉有點疼。',
+    '',
+    '「W，」我說，「你當初為什麼要來？」',
+    '',
+    '他沒有回答。他只是把一隻手放在我頭頂，慢慢地、笨拙地，摸了一下。',
+    '「因為，」他說，「我答應過你，我會回來。」',
+    '',
+    '遠處的海平面上，太陽升起來了。',
+    '很淡，很暖，像是從來沒有見過的光。'
+  ]
+},
+憎恨: { title:'憎 恨', sub:'BAD ENDING', summary:'親手槍殺 W，記憶反噬後精神崩潰。',
+  story: [
+    '槍在我手裡。那把槍是局長留在桌上的。我在第一天的晚上把它收進腰間，金屬的重量壓著脊椎，壓了整整兩天。',
+    '我一直在想，什麼時候會用到它。',
+    '',
+    '原來是現在。',
+    '',
+    'W 沒有躲。他只是看著我，眼神裡有種近乎溫柔的東西。',
+    '那種眼神讓我煩躁。我抬起槍口，對準他的額頭。',
+    '',
+    '「你終於……」他輕聲說，「願意看我一眼了。」',
+    '',
+    '槍聲在密閉的房間裡炸開。',
+    '血濺上單向鏡，順著玻璃往下淌。',
+    '',
+    '然後——記憶回來了。像海水灌進肺裡。',
+    '',
+    '我想起了研究所的白燈。想起了有人在半夜替我換點滴。',
+    '想起了有人用體溫焐熱我發抖的脊背。',
+    '想起了那句「別怕，我在」。',
+    '',
+    '我想起了他的名字。',
+    '我想起他在第一天對我說：「你看起來比我想像的年輕。」',
+    '他那時候在笑。他從第一句話就認出我了。',
+    '',
+    '我跪在那灘血裡，抱著他的頭，一遍一遍地叫他的名字。',
+    '他再也聽不見了。',
+    '',
+    '審訊室外面，有人在敲門。我沒有去開。',
+    '',
+    '我只是抱著他。他的血從我的指縫裡滲出來，溫熱的，一直流到我膝蓋上。',
+    '',
+    '監控鏡頭上那顆紅燈還亮著。它看著我。',
+    '',
+    '我忽然想起他問過我一個問題：',
+    '「如果一個人失去了所有記憶，他還算是原來的自己嗎？」',
+    '',
+    '我當時回答：「算。」',
+    '',
+    '我錯了。',
+    '失去了記憶的那個我，殺死了記得一切的他。'
+  ]
+},
+虛妄: { title:'虛 妄', sub:'BAD ENDING', summary:'W 放棄求生，咬舌自盡。',
+  story: [
+    '第三天早上，他不再看我了。',
+    '',
+    '我把提問清單推到桌上。他沒有翻。他的眼睛望著天花板，瞳孔散得很開，像兩枚褪色的硬幣。',
+    '',
+    '「我一直在等一個信號，」他說。「等一句只有我們兩個懂的話。」',
+    '「可是沒有。」',
+    '',
+    '我張了張嘴。我想說：我聽不懂你在說什麼。我想說：你只是在拖延時間。',
+    '可是那句話沒有出來。因為在那零點幾秒裡，我看見他的眼角有一滴水滑下去。',
+    '',
+    '然後——他咬斷了自己的舌頭。',
+    '',
+    '血從嘴角流出來。',
+    '',
+    '我記得我當時站起來了。我記得我撞翻了椅子。我記得監控室的警報響了。',
+    '可是那些都像隔著一層水。',
+    '',
+    '真正發生的事是——我蹲下來，捧起他的臉。血從我指縫裡流過去。',
+    '',
+    '我想起海水的味道。想起自己曾經是一隻白鼠。',
+    '想起曾經有人為我調配 0.5 毫升的鎮靜劑，說：「這樣你就不會那麼疼了。」',
+    '想起曾經有人對我說：「我不走。」',
+    '',
+    '我趴在他身上，喊他的名字。',
+    '',
+    '走廊裡傳來腳步聲。有人在說話，聲音很平：「裡面的那個也瘋了。要不要一起處理？」',
+    '',
+    '我沒有回答。我只是抱著他。他的身體一點一點變涼。像海水。'
+  ]
+},
+深淵: { title:'深 淵', sub:'BAD ENDING', summary:'政府識破兩人，氰化物毒氣注入審訊室。',
+  story: [
+    '第二十七分鐘，通風管道裡傳來輕微的嘶聲。',
+    '',
+    '不是風。',
+    '',
+    'W 抬起頭。他的鼻翼動了動。然後他看向我。',
+    '那是三天以來，他第一次露出真正的恐懼。不是為了他自己的。',
+    '',
+    '「屏住呼吸，」他說，「快。」',
+    '',
+    '太遲了。氰化物的氣味像杏仁。我的喉嚨瞬間痙攣起來。',
+    '',
+    '監視器後面傳來一聲冷漠的「執行完畢」。',
+    '',
+    'W 想從椅子上站起來。鐵鏈繃得很緊。他伸出手——他想抓住我。',
+    '我握住他的手。他的手已經不再掙扎了。',
+    '',
+    '他的嘴唇在動，但沒有聲音。我看懂了。他在說：對不起。',
+    '',
+    '我伏在他身上，把臉埋進他頸窩。他的脈搏在我唇下，最後一下。',
+    '',
+    '單向鏡的另一邊，有人在填寫報告：',
+    '「兩名實驗體，清理完畢。」',
+    '',
+    '編號 W-0731。編號 KB-114。',
+    '兩個數字，一行字。僅此而已。'
+  ]
+},
+白鴿: { title:'白 鴿', sub:'SACRIFICE ENDING', summary:'推 W 進通風井，獨自斷後殉職。',
+  story: [
+    '我把兩把手槍的保險都打開了。',
+    '',
+    '通風井的蓋子掀開的時候，裡面是黑色的，什麼也看不見。W 站在我旁邊，低著頭看那個洞。',
+    '',
+    '「你先走，」我說。',
+    '',
+    'W 看著我。很久。然後他笑了。那是我記憶裡最好看的一次笑。',
+    '「你還是這樣，」他說。「總把最難的那條路留給自己。」',
+    '',
+    '我沒有回答。我在他後背推了一把。他沒有站穩，往後跌進通風井裡。',
+    '他在黑暗裡抬起頭，想再說什麼。我把蓋子蓋回去，然後轉身。',
+    '',
+    '第一批特警衝進來的時候，我開了第一槍。第二批衝進來的時候，我開了第二槍。',
+    '我只記得，彈匣空了的時候，我還在按扳機。',
+    '',
+    '最後的最後，我聽見遠處傳來船笛。',
+    '',
+    '記憶在那個時候湧回來。我想起我小的時候，曾經問過他一個問題：',
+    '「如果有一天你死了，我該怎麼辦？」',
+    '',
+    '他當時摸了摸我的頭，說：「那我就先走一步，去前面等你。」',
+    '',
+    '原來那個名字，是他給的。原來這輩子所有的路，都是他領著我走的。',
+    '包括這最後一條。'
+  ]
+},
+悲焰: { title:'悲 焰', sub:'TRAGIC ENDING', summary:'兩人逃亡，W 傷重不支，海岸線殉難。',
+  story: [
+    '警報響起來的時候，我們剛衝出審訊室。',
+    '',
+    'W 的腿在滴水——他失血太多，跑不動。那些酷刑留下的傷口一直在滲。',
+    '我半背半拖著他在走廊裡衝。腳下的血印一路延伸，從 B3 層一直延伸到地面。',
+    '',
+    '「別管我了，」他說，「你自己跑。」',
+    '我沒有回答。我只是把他抓得更緊。',
+    '',
+    '海岸線就在前面。探照燈亮了。',
+    '',
+    '「別停，」他說，「別停下。」',
+    '',
+    '我沒有停。我一直跑。然後——我看見海了。',
+    '深藍色的，很寬的，一直延伸到天邊的海。那一瞬間我以為我們成功了。',
+    '',
+    '下一秒，我看見了三面合圍的槍口。',
+    '',
+    'W 轉過身。他把我護在身後。他的手很燙，燙得嚇人。他沒有看我，他一直看著那些槍口。',
+    '「小白鼠，」他說，「我帶你出來了。」',
+    '',
+    '槍聲和海浪聲一起響起來。',
+    '你最後看見的，是他胸口那朵慢慢綻開的紅花。還有他嘴角那個得逞的笑。',
+    '',
+    '海浪捲上來的時候，我抱住他。他的身體在往下滑。',
+    '我只記得，那個時候我終於想起所有的事。想起他的名字。',
+    '想起他第一次抱著我逃出研究所的雨夜。',
+    '',
+    '想起那個時候他也是這樣，把我護在懷裡，一動不動。'
+  ]
+},
+遺憾: { title:'遺 憾', sub:'REGRET ENDING', summary:'W 已死，你才想起一切。',
+  story: [
+    '你終於想起了全部。',
+    '',
+    '不是在某個特別的時刻。不是在夢裡，不是在海邊，不是在槍響之後。',
+    '就是在第三天下午，你坐在審訊室的鐵椅上，看著對面那個已經不再回應你的人。',
+    '',
+    '然後你想起來了。',
+    '',
+    '想起那個雨夜。想起那支針。想起那個把你從解剖台上抱下來的人。',
+    '想起你發燒的時候，他守了你一整夜。',
+    '想起他叫你名字的時候，尾音總是往上揚一點，像在哄一個小孩。',
+    '',
+    '可是太晚了。',
+    '',
+    'W 的手已經涼了。他的手腕上還留著電擊灼傷的痕跡——是你親手按下的那個按鈕。',
+    '他的手背上有針孔，是兩天前注射吐真劑留下的。他的嘴角還有乾涸的血。',
+    '',
+    '你把額頭貼在他冰冷的額頭上。',
+    '「我記起來了，」你說。「我記起來了。你看看我。」',
+    '',
+    '他沒有睜眼。',
+    '',
+    '你不知道自己坐在那裡多久。可能是一個小時，可能是一整個下午。',
+    '審訊室的燈還亮著。單向鏡的另一邊有沒有人，你已經不在乎了。',
+    '',
+    '── 往後的日子很長。',
+    '',
+    '長到你每一天都要把這段記憶重新想一遍。',
+    '長到你只要聞到海鹽的味道，就會想起他。',
+    '長到你這輩子都無法原諒自己——',
+    '不是因為你殺了他。是因為你這麼晚才想起，他一直在等你回家。'
+  ]
+},
+未曾: { title:'未 曾', sub:'NORMAL ENDING', summary:'W 被公開處決，你被清洗記憶。',
+  story: [
+    '公開處決定在週三的清晨。',
+    '',
+    '你沒有去看。',
+    '',
+    '你在檔案室整理卷宗。編號 W-0731 的那一疊紙，厚得像一本沒人讀過的小說。',
+    '你把它們一份一份抽出來，放進碎紙機。',
+    '',
+    '機器嗡嗡響了三秒鐘，然後停了。',
+    '',
+    '你忽然覺得有點冷。',
+    '',
+    '── 那天下午，政府給你安排了一次記憶清洗。',
+    '',
+    '程序很簡單。躺下，注射，閉眼，然後一切從頭開始。',
+    '你躺在白色的房間裡，看著頭頂的燈一點點變暗。',
+    '',
+    '你想起了最後一個問題。那個囚犯問你：',
+    '「如果一個人失去了所有記憶，他還算是原來的自己嗎？」',
+    '',
+    '你當時怎麼回答的？你想不起來了。',
+    '',
+    '你只記得那個時候他笑了。笑得很輕，很淡，像是鬆了一口氣。',
+    '',
+    '── 水漫過你的口鼻。',
+    '',
+    '很冷。像海。',
+    '',
+    '在意識完全斷開之前的最後一個念頭是：',
+    '那個編號 0731 的人，最後一次見你，是隔著一面單向鏡。',
+    '而你這輩子都沒有想起來，他到底是誰。'
+  ]
+}
+};
+
+async function endingPhase(){
+  clearDock('[ 審訊程序終止 ]');
+  $('tortureBtn').disabled = true;
+  instant('head', '── 主線事件：終局結算 ──');
+  await say('sys', '[ 系統 ] 三日提問額度用盡。正在計算最終判定…');
+  await sleep(800);
+  await say('sys', '[ 系統 ] 判定完成。');
+  const key = determineEnding();
+  state.ended = true;
+  unlockEnding(key);
+  autoSave();
+  await playEnding(key);
+}
+
+async function playEnding(key){
+  const E = ENDINGS[key];
+  if(!E) return;
+  const fadeEl = $('fade');
+  fadeEl.style.transition = 'opacity 3s linear';
+  fadeEl.style.opacity = '1';
+  await sleep(3100);
+  sfxAlarm();
+  const bt = $('blacktext');
+  bt.style.fontSize = 'var(--fs-title)';
+  bt.style.letterSpacing = '8px';
+  bt.style.color = '#00E5A3';
+  bt.classList.add('on');
+  bt.textContent = E.title;
+  await sleep(2200);
+  bt.style.fontSize = 'var(--fs-small)';
+  bt.style.letterSpacing = '10px';
+  bt.style.color = '#6a9d8c';
+  bt.textContent = E.sub;
+  await sleep(1800);
+  bt.style.fontSize = 'var(--fs-story)';
+  bt.style.letterSpacing = '1.5px';
+  bt.style.color = '#9fb8b0';
+  for(const l of E.story){
+    bt.textContent = l;
+    if(l === ''){ await sleep(600); continue; }
+    await sleep(Math.min(l.length * 55 + 450, 3000));
+  }
+  await sleep(2000);
+  bt.style.color = '#00E5A3';
+  bt.style.fontSize = 'var(--fs-hud)';
+  bt.style.letterSpacing = '8px';
+  bt.textContent = '— END —';
+  await sleep(3000);
+  bt.style.fontSize = 'var(--fs-hud)';
+  bt.style.letterSpacing = '4px';
+  bt.style.color = '#6a9d8c';
+  const totalUnlocked = getUnlockedEndings().length;
+  if(totalUnlocked >= 8){
+    bt.textContent = '按 F5 重新開始 — 全結局已解鎖';
+  } else {
+    bt.textContent = '已解鎖 ' + totalUnlocked + ' / 8 個結局 — 按 F5 重新開始';
+  }
+}
+
+const SAVE_KEY = 'mirror_saves_v6';
+const ENDINGS_KEY = 'mirror_endings_v6';
+const MARKS_KEY = 'mirror_marks_v6';
+
+function getSaves(){
+  try{ return JSON.parse(localStorage.getItem(SAVE_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function saveGame(slot){
+  try{
+    const saves = getSaves();
+    saves[slot] = { state: JSON.parse(JSON.stringify(state)), timestamp: Date.now() };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saves));
+    refreshSlotUI();
+  }catch(e){}
+}
+let selectedSlot = 1;
+function autoSave(){ saveGame(selectedSlot); }
+
+function refreshSlotUI(){
+  const saves = getSaves();
+  document.querySelectorAll('.slot-btn').forEach(btn => {
+    const slot = btn.dataset.slot;
+    const line1 = btn.querySelector('.slot-line1');
+    const line2 = btn.querySelector('.slot-line2');
+    btn.classList.toggle('active', String(selectedSlot) === slot);
+    if(saves[slot]){
+      btn.classList.add('has-save');
+      line1.textContent = '槽位 ' + ['','一','二','三'][slot];
+      line2.textContent = 'DAY ' + saves[slot].state.day + ' — R' + saves[slot].state.round;
+    } else {
+      btn.classList.remove('has-save');
+      line1.textContent = '槽位 ' + ['','一','二','三'][slot];
+      line2.textContent = '空';
+    }
+  });
+}
+
+function getUnlockedEndings(){
+  try{ return JSON.parse(localStorage.getItem(ENDINGS_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function unlockEnding(key){
+  const list = getUnlockedEndings();
+  if(!list.includes(key)){
+    list.push(key);
+    localStorage.setItem(ENDINGS_KEY, JSON.stringify(list));
+  }
+}
+
+function loadMarks(){
+  try{ return JSON.parse(localStorage.getItem(MARKS_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function saveMarks(){
+  try{ localStorage.setItem(MARKS_KEY, JSON.stringify(state.marks)); }
+  catch(e){}
+}
+
+function initFileInteractions(){
+  const body = $('fileBody');
+  const paragraphs = body.querySelectorAll('p');
+  paragraphs.forEach((p, idx) => {
+    if(p.dataset.markInit) return;
+    p.dataset.markInit = '1';
+    const text = p.textContent;
+    p.innerHTML = '';
+    const words = text.split(/(\s+)/);
+    words.forEach((w, wIdx) => {
+      if(w.trim() === ''){
+        p.appendChild(document.createTextNode(w));
+        return;
+      }
+      const span = document.createElement('span');
+      span.className = 'markable';
+      span.dataset.mid = 'p' + idx + 'w' + wIdx;
+      span.textContent = w;
+      if(state.marks[span.dataset.mid] === 'hl') span.classList.add('hl');
+      if(state.marks[span.dataset.mid] === 'mark') span.classList.add('mark');
+      span.addEventListener('click', e => {
+        e.stopPropagation();
+        if(!state.markedMode) return;
+        const mid = span.dataset.mid;
+        if(state.markedMode === 'hl'){
+          if(state.marks[mid] === 'hl'){ delete state.marks[mid]; span.classList.remove('hl'); }
+          else { state.marks[mid] = 'hl'; span.classList.add('hl'); span.classList.remove('mark'); }
+        } else if(state.markedMode === 'mark'){
+          if(state.marks[mid] === 'mark'){ delete state.marks[mid]; span.classList.remove('mark'); }
+          else { state.marks[mid] = 'mark'; span.classList.add('mark'); span.classList.remove('hl'); }
+        }
+        saveMarks();
+      });
+      p.appendChild(span);
+    });
+  });
+}
+
+function openFile(){
+  $('fileBody').innerHTML = FILE_HTML;
+  initFileInteractions();
+  $('fileOverlay').classList.add('on');
+}
+function closeFile(){ $('fileOverlay').classList.remove('on'); }
+
+const INTRO_HTML = `
+<p class="meta">// 政府地下審訊中心 — 內部通報 — 閱後銷毀</p>
+<h1>通 報 0731</h1>
+<p>今夜值班的人是你。</p>
+<p>桌上的終端剛剛亮起，沒有來電顯示。附件只有一份檔案，檔案標題只有一行字：</p>
+<p class="amber">「第四審訊，即刻執行。」</p>
+<p>下面是代號 W-0731 的犯罪檔案。</p>
+<p>你翻開它。檔案內容你能背下來，因為你已經讀過三次。但今晚你還是打開了它——或許只是因為習慣。</p>
+<p>檔案上寫的東西很齊全。時間、地點、罪名、證據清單。可是你讀著讀著，會覺得有些地方不太對。</p>
+<p class="amber">說不上來為什麼。就是不太對。</p>
+<p>比如——第一頁的姓名欄，為什麼是空白的？</p>
+<p>比如——逮捕經過裡那句「終於等到了」，是誰記下來的？誰會記得一個犯人自言自語的每一個字？</p>
+<p>比如——值班獄警的名字，為什麼被換掉了？</p>
+<p>你合上檔案，走進電梯。地下三層。</p>
+<p>走廊很長，燈管在頭頂一明一滅。第七審訊室的門在你面前打開。</p>
+<p>裡面的人抬起頭。他看著你，很輕地笑了一下。</p>
+<div class="quote">「早安，審訊官。」</div>
+<p class="meta">── 你有三天的時間。每一天九個回合。每個回合，三個問題。</p>
+<p class="meta">── 你隨時可以查閱檔案，也可以在上面做記號。</p>
+<p class="meta">── 記住：你不需要問完所有問題。</p>
+`;
+
+function showIntro(){
+  $('introBody').innerHTML = INTRO_HTML;
+  $('introScreen').classList.add('on');
+  $('menu').classList.add('hidden');
+}
+
+async function runDay(day){
+  state.day = day;
+  state.round = 1;
+  state.tortureToday = false;
+  issueDailyTortures(day);
+  await morningEvent(day);
+  for(let r = 1; r <= 9; r++){
+    if(state.dead || state.ended) return;
+    state.round = r;
+    await runRound(day, r);
+  }
+  if(state.dead || state.ended) return;
+  if(day === 1) await eveningEvent(1);
+  if(day === 2) await eveningEvent(2);
+  if(state.dead || state.ended) return;
+  await nightEcho(day);
+  if(day < 3){
+    state.day = day + 1;
+    autoSave();
+    await runDay(day + 1);
+  } else {
+    await endingPhase();
+  }
+}
+
+async function startGame(){
+  state = makeDefaultState();
+  state.currentSlot = selectedSlot;
+  state.name = ($('nameInput').value || '').trim() || '小白鼠';
+  state.marks = loadMarks();
+  $('menu').classList.add('hidden');
+  $('introScreen').classList.remove('on');
+  updateHUD();
+  autoSave();
+  await runDay(1);
+}
+
+async function continueGame(savedState){
+  state = Object.assign(makeDefaultState(), savedState);
+  state.currentSlot = selectedSlot;
+  state.marks = loadMarks();
+  $('menu').classList.add('hidden');
+  $('introScreen').classList.remove('on');
+  updateHUD();
+  instant('sys', '[ 系統 ] 存檔載入完成。DAY ' + state.day + ' — ROUND ' + state.round + '。');
+  await sleep(500);
+  const startDay = state.day;
+  state.tortureToday = false;
+  if(startDay === 1) state.torturesAvailable['T05'] = true;
+  if(startDay === 2) { state.torturesAvailable['T11'] = true; state.torturesAvailable['T16'] = true; }
+  if(startDay === 3) { state.torturesAvailable['T11'] = true; state.torturesAvailable['T16'] = true; state.torturesAvailable['T23'] = true; }
+  await morningEvent(startDay);
+  for(let r = state.round; r <= 9; r++){
+    if(state.dead || state.ended) return;
+    state.round = r;
+    await runRound(startDay, r);
+  }
+  if(state.dead || state.ended) return;
+  if(startDay === 1) await eveningEvent(1);
+  if(startDay === 2) await eveningEvent(2);
+  if(state.dead || state.ended) return;
+  await nightEcho(startDay);
+  if(startDay < 3){
+    state.day = startDay + 1;
+    state.round = 1;
+    autoSave();
+    await runDay(state.day);
+  } else {
+    await endingPhase();
+  }
+}
+
+const ALL_ENDINGS = ['坦途','憎恨','虛妄','深淵','白鴿','悲焰','遺憾','未曾'];
+
+function renderGallery(){
+  const unlocked = getUnlockedEndings();
+  const grid = $('galleryGrid');
+  grid.innerHTML = '';
+  ALL_ENDINGS.forEach(k => {
+    const E = ENDINGS[k];
+    const div = document.createElement('div');
+    const isUnlocked = unlocked.includes(k);
+    div.className = 'gallery-slot' + (isUnlocked ? ' unlocked' : '');
+    if(isUnlocked){
+      div.innerHTML = '<div class="lock">◆</div>' +
+        '<div class="slot-title">' + E.title + '</div>' +
+        '<div class="slot-sub">' + E.sub + '</div>' +
+        '<div class="slot-summary">' + E.summary + '</div>';
+    } else {
+      div.innerHTML = '<div class="lock">?</div><div class="slot-title">未 解 鎖</div><div class="slot-sub">— — —</div>';
+    }
+    grid.appendChild(div);
+  });
+}
+
+function renderEndingGuide(){
+  const unlocked = getUnlockedEndings();
+  const list = $('guideList');
+  list.innerHTML = '';
+  const guides = [
+    { k:'坦途', cond:'解鎖完整特殊鏈：D1R1c → D1R4c → D2R2c → D2R5c → D3R3c → D3R6c → D3R9c，且 Know_Pw ≥ 70、Trust_P ≥ 70、Know_Wp ≥ 70、Kill_P < 40。' },
+    { k:'憎恨', cond:'Kill_P 累積至 90 以上，或在 D3R6 選擇處決選項（D3R6a）。' },
+    { k:'虛妄', cond:'Grief_W ≥ 75 且 Know_Pw < 50。頻繁使用高壓、冷漠與威嚇選項，且不觸發記憶路線。' },
+    { k:'深淵', cond:'政府疑心值（GovSuspect）達 45 以上。使用酷刑、選擇把配槍帶走、選擇偽造記錄、反覆在壓力與關懷之間切換。' },
+    { k:'白鴿', cond:'解鎖 D1R6b → D2R3a → D3R4a 的特殊鏈，並在 D3R8 選擇 D3R8c 自我犧牲路線。' },
+    { k:'悲焰', cond:'Know_Pw ≥ 60、Trust_P ≥ 60，但 Health_W 在 1-30 之間。' },
+    { k:'遺憾', cond:'Know_Pw ≥ 60 且 Health_W 歸零。在 W 死後才想起一切。' },
+    { k:'未曾', cond:'保底結局。三天內未累積足夠記憶或信任，也未選擇任何特殊路線。' }
+  ];
+  const allUnlocked = ALL_ENDINGS.every(k => unlocked.includes(k));
+  guides.forEach(g => {
+    const isUnlocked = unlocked.includes(g.k);
+    const row = document.createElement('div');
+    row.className = 'guide-row' + (isUnlocked ? '' : ' locked');
+    row.innerHTML = '<div class="g-title">' + (isUnlocked ? '◆ ' + g.k : '? 未 解 鎖') + '</div>' +
+                    '<div class="g-cond">' + (isUnlocked || allUnlocked ? g.cond : '解鎖後顯示') + '</div>';
+    list.appendChild(row);
+  });
+  if(allUnlocked){
+    const bonus = document.createElement('div');
+    bonus.className = 'guide-row';
+    bonus.style.borderLeftColor = '#00E5A3';
+    bonus.style.background = 'rgba(0,229,163,.06)';
+    bonus.innerHTML = '<div class="g-title" style="color:#00E5A3">全 結 局 達 成</div>' +
+                     '<div class="g-cond">你已經看過所有八種結局。每一條路線，都是他等你回家的一次嘗試。</div>';
+    list.appendChild(bonus);
+  }
+}
+
+function showGallery(){ renderGallery(); $('galleryScreen').classList.add('on'); }
+function hideGallery(){ $('galleryScreen').classList.remove('on'); }
+function showGuide(){ renderEndingGuide(); $('endingGuide').classList.add('on'); }
+function hideGuide(){ $('endingGuide').classList.remove('on'); }
+
+$('startBtn').onclick = () => {
+  ac();
+  const saves = getSaves();
+  if(saves[selectedSlot]){
+    if(confirm('槽位 ' + selectedSlot + ' 已有存檔。\n\n確定：讀取存檔\n取消：覆蓋存檔重新開始')){
+      continueGame(saves[selectedSlot].state);
+    } else {
+      showIntro();
+    }
+  } else {
+    showIntro();
+  }
+};
+$('nameInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ ac(); $('startBtn').click(); }
+});
+$('introNext').onclick = () => { ac(); startGame(); };
+$('galleryBtn').onclick = () => {
+  ac();
+  const unlocked = getUnlockedEndings();
+  if(unlocked.length >= 8){ showGuide(); }
+  else { showGallery(); }
+};
+$('galleryBack').onclick = hideGallery;
+$('guideBack').onclick = hideGuide;
+$('fileBtnTop').onclick = () => { ac(); openFile(); };
+$('fileClose').onclick = closeFile;
+$('modeHighlight').onclick = () => {
+  state.markedMode = state.markedMode === 'hl' ? null : 'hl';
+  $('modeHighlight').classList.toggle('active', state.markedMode === 'hl');
+  $('modeMark').classList.remove('active');
+};
+$('modeMark').onclick = () => {
+  state.markedMode = state.markedMode === 'mark' ? null : 'mark';
+  $('modeMark').classList.toggle('active', state.markedMode === 'mark');
+  $('modeHighlight').classList.remove('active');
+};
+$('modeClear').onclick = () => {
+  state.marks = {};
+  saveMarks();
+  openFile();
+  $('modeHighlight').classList.remove('active');
+  $('modeMark').classList.remove('active');
+  state.markedMode = null;
+};
+$('tortureBtn').onclick = () => {
+  if(state.ended || state.dead || state.Health_W <= 0) return;
+  ac();
+  openTorturePanel();
+};
+$('tortureClose').onclick = closeTorturePanel;
+document.querySelectorAll('.slot-btn').forEach(btn => {
+  btn.onclick = () => {
+    selectedSlot = parseInt(btn.dataset.slot);
+    refreshSlotUI();
+  };
+});
+
+refreshSlotUI();
+$('nameInput').focus();
+</script>
+</body>
+</html>
